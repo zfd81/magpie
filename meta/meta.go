@@ -25,20 +25,15 @@ type MetaInfo interface {
 }
 
 var (
-	storage store.Storage
-	ins     = &InstanceInfo{
-		Name:      "Taglib",
-		Text:      "Taglib",
-		Databases: make(map[string]*Database),
-	}
+	metaDB store.Storage
 )
 
 func init() {
-	db, err := store.New(StoragePath)
+	storage, err := store.New(StoragePath)
 	if err != nil {
 		log.Panicln(err)
 	}
-	storage = db
+	metaDB = storage
 }
 
 func StoreMetadata(info MetaInfo) error {
@@ -46,7 +41,7 @@ func StoreMetadata(info MetaInfo) error {
 	if err != nil {
 		return err
 	}
-	return storage.Put([]byte(info.GetPath()), data)
+	return metaDB.Put([]byte(info.GetPath()), data)
 }
 
 func LoadMetadata(info MetaInfo) error {
@@ -58,5 +53,5 @@ func LoadMetadata(info MetaInfo) error {
 }
 
 func ReadMetadata(path string) ([]byte, error) {
-	return storage.Get([]byte(path))
+	return metaDB.Get([]byte(path))
 }

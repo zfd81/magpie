@@ -5,10 +5,9 @@ import (
 )
 
 type InstanceInfo struct {
-	Name      string                   `json:"name"`
-	Text      string                   `json:"text"`
-	Comment   string                   `json:"comment,omitempty"`
-	Databases map[string]*DatabaseInfo `json:"-"`
+	Name    string `json:"name"`
+	Text    string `json:"text"`
+	Comment string `json:"comment,omitempty"`
 }
 
 func (i *InstanceInfo) GetMName() string {
@@ -17,10 +16,6 @@ func (i *InstanceInfo) GetMName() string {
 
 func (i *InstanceInfo) GetPath() string {
 	return fmt.Sprintf("%s%s%s", MetaPath, PathSeparator, i.GetMName())
-}
-
-func (i *InstanceInfo) CreateDatabase(database DatabaseInfo) *InstanceInfo {
-	return nil
 }
 
 func (i *InstanceInfo) Store() error {

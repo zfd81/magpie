@@ -1,32 +1,39 @@
 package meta
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
 type TableInfo struct {
-	Name    string        `json:"name"`
-	Text    string        `json:"text,omitempty"`
-	Comment string        `json:"comment,omitempty"`
-	Charset string        `json:"charset"`
-	Columns []*ColumnInfo `json:"cols"`
+	Id       string        `json:"name"`
+	Name     string        `json:"name"`
+	Text     string        `json:"text,omitempty"`
+	Comment  string        `json:"comment,omitempty"`
+	Charset  string        `json:"charset"`
+	Columns  []*ColumnInfo `json:"cols"`
+	Keys     []string      `json:"keys"`
+	Indexes  []string      `json:"indexes"`
+	Database DatabaseInfo  `json:"-"`
 }
 
 func (t *TableInfo) GetMName() string {
 	return fmt.Sprintf("%s%s", t.Name, TableSuffix)
 }
 
-func (t *Table) GetFullName() string {
-	return fmt.Sprintf("%s%s%s", t.Database.GetFullName(), config.NameSeparator, t.Name)
+func (t *TableInfo) GetPath() string {
+	return fmt.Sprintf("%s%s%s", t.Database.GetPath(), PathSeparator, t.GetMName())
 }
 
-func (t *Table) GetPath() string {
-	return fmt.Sprintf("%s%s%s", t.Database.GetPath(), config.PathSeparator, t.GetMName())
+func (i *TableInfo) Store() error {
+	return StoreMetadata(i)
 }
 
-func (t *Table) CreateColumn(name string, dataType string) *Column {
-	col := &Column{
+func (i *TableInfo) Load() error {
+	return LoadMetadata(i)
+}
+
+func (t *TableInfo) CreateColumn(name string, dataType string) *ColumnInfo {
+	col := &ColumnInfo{
 		Name:     name,
 		Text:     name,
 		DataType: dataType,
@@ -36,7 +43,7 @@ func (t *Table) CreateColumn(name string, dataType string) *Column {
 	return col
 }
 
-func (t *Table) RemoveColumn(name string) *Table {
+func (t *TableInfo) RemoveColumn(name string) *TableInfo {
 	for i, v := range t.Columns {
 		if v.Name == name {
 			t.Columns = append(t.Columns[:i], t.Columns[i+1:]...)
@@ -49,7 +56,7 @@ func (t *Table) RemoveColumn(name string) *Table {
 	return t
 }
 
-func (t *Table) ModifyColumn(col *Column) *Table {
+func (t *TableInfo) ModifyColumn(col *ColumnInfo) *TableInfo {
 	for i, v := range t.Columns {
 		if v.Name == col.Name {
 			col.Index = v.Index
@@ -60,7 +67,7 @@ func (t *Table) ModifyColumn(col *Column) *Table {
 	return t
 }
 
-func (t *Table) GetColumnIndex(name string) int {
+func (t *TableInfo) GetColumnIndex(name string) int {
 	for _, v := range t.Columns {
 		if v.Name == name {
 			return v.Index
@@ -69,20 +76,11 @@ func (t *Table) GetColumnIndex(name string) int {
 	return -1
 }
 
-func (t *Table) GetColumn(name string) *Column {
+func (t *TableInfo) GetColumn(name string) *ColumnInfo {
 	for _, v := range t.Columns {
 		if v.Name == name {
 			return v
 		}
 	}
 	return nil
-}
-
-func (t *Table) Store() error {
-	return storeTable(t)
-}
-
-func (t *Table) Load(data []byte) error {
-	err := json.Unmarshal(data, t)
-	return err
 }
