@@ -59,6 +59,14 @@ func (c *Cache) GetBool(key string) bool {
 	return false
 }
 
+func (c *Cache) GetSlice(key string) []interface{} {
+	value, found := c.Get(key)
+	if found {
+		return cast.ToSlice(value)
+	}
+	return []interface{}{}
+}
+
 func (c *Cache) Count() int {
 	return c.c.ItemCount()
 }
