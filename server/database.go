@@ -19,7 +19,6 @@ func (d *Database) CreateTable(info meta.TableInfo) *Table {
 			Database: d.DatabaseInfo,
 		},
 	}
-	tbl.primaryKeyFunc = BuildingPrimaryKeyFunc(tbl)         //构建主键生成函数
 	tbl.dataConversionFunc = BuildingDataConversionFunc(tbl) //构建行数据转换函数
 	d.Tables[tbl.Name] = tbl
 	return tbl

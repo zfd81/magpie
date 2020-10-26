@@ -9,6 +9,7 @@ import (
 const (
 	DataTypeString  = "STRING"
 	DataTypeInteger = "INT"
+	DataTypeFloat   = "FLOAT"
 	DataTypeBool    = "BOOL"
 )
 
@@ -25,10 +26,16 @@ func UUID() string {
 	return uuid.New().String()
 }
 
-func write(key string, value []interface{}) {
+func write(key string, value []interface{}) int {
 	cache.Set(key, value)
+	return 1
 }
 
 func read(key string) []interface{} {
 	return cache.GetSlice(key)
+}
+
+func remove(key string) int {
+	cache.Remove(key)
+	return 1
 }

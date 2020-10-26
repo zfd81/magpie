@@ -1,6 +1,6 @@
 package server
 
-func Insert(table Table) error {
+func Insert(table Table, row map[string]interface{}) error {
 	return nil
 }
 
