@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"strings"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -25,6 +26,17 @@ func (c *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration) *Ca
 func (c *Cache) Remove(key string) *Cache {
 	c.c.Delete(key)
 	return c
+}
+
+func (c *Cache) RemoveWithPrefix(prefix string) int {
+	cnt := 0
+	for k, _ := range c.c.Items() {
+		if strings.HasPrefix(k, prefix) {
+			c.c.Delete(k)
+			cnt++
+		}
+	}
+	return cnt
 }
 
 func (c *Cache) Get(key string) (interface{}, bool) {

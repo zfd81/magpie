@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/antonmedv/expr"
 )
 
 func key(keys []int) func(strs []string) string {
@@ -16,8 +18,22 @@ func key(keys []int) func(strs []string) string {
 }
 
 func main() {
-	arr := []string{"a", "b", "c", "d", "e", "f"}
-	f1 := key([]int{2, 1})
-	f2 := key([]int{2, 4})
-	fmt.Println(f1(arr), f2(arr))
+	env := map[string]interface{}{
+		"greet":   "Hello, %v!",
+		"names":   []string{"world", "you"},
+		"sprintf": fmt.Sprintf,
+	}
+
+	code := `sprintf(greet, names[0])`
+
+	program, err := expr.Compile(code, expr.Env())
+	if err != nil {
+		panic(err)
+	}
+	output, err := expr.Run(program, env)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(output)
 }
