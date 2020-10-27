@@ -22,6 +22,7 @@ type MetaInfo interface {
 	GetPath() string
 	Store() error
 	Load() error
+	Remove() error
 }
 
 var (
@@ -52,6 +53,18 @@ func LoadMetadata(info MetaInfo) error {
 	return json.Unmarshal(data, info)
 }
 
+func RemoveMetadata(info MetaInfo) error {
+	return metaDB.Delete([]byte(info.GetPath()))
+}
+
 func ReadMetadata(path string) ([]byte, error) {
 	return metaDB.Get([]byte(path))
+}
+
+func LoadObject(path string, info MetaInfo) error {
+	data, err := ReadMetadata(path)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, info)
 }

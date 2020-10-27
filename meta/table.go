@@ -5,15 +5,15 @@ import (
 )
 
 type TableInfo struct {
-	Id          string        `json:"name"`
+	Id          string        `json:"id,omitempty"`
 	Name        string        `json:"name"`
 	Text        string        `json:"text,omitempty"`
 	Comment     string        `json:"comment,omitempty"`
 	Charset     string        `json:"charset"`
 	Columns     []*ColumnInfo `json:"cols"`
 	Keys        []string      `json:"keys"`
-	Indexes     []string      `json:"indexes"`
-	DerivedCols []*ColumnInfo `json:"dcols"`
+	Indexes     []string      `json:"indexes,omitempty"`
+	DerivedCols []*ColumnInfo `json:"dcols,omitempty"`
 	Database    DatabaseInfo  `json:"-"`
 }
 
@@ -31,6 +31,10 @@ func (i *TableInfo) Store() error {
 
 func (i *TableInfo) Load() error {
 	return LoadMetadata(i)
+}
+
+func (i *TableInfo) Remove() error {
+	return RemoveMetadata(i)
 }
 
 func (t *TableInfo) CreateColumn(name string, dataType string) *ColumnInfo {

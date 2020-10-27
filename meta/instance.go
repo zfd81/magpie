@@ -25,3 +25,7 @@ func (i *InstanceInfo) Store() error {
 func (i *InstanceInfo) Load() error {
 	return LoadMetadata(i)
 }
+
+func (i *InstanceInfo) Remove() error {
+	return RemoveMetadata(i)
+}

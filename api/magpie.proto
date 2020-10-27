@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+option go_package = "/magpiepb"; // 定义包名
+//option java_multiple_files = true;
+//option java_package = "io.grpc.examples.routeguide";
+//option java_outer_classname = "RouteGuideProto";
+
+
+//enum DataType {
+//  STRING = 0;
+//  INT = 1;
+//  FLOAT = 2;
+//  BOOL = 3;
+//}
+//
+//message Column {
+//  string name = 1;
+//  string text = 2;
+//  string comment = 3;
+//  DataType dataType =4;
+//  int64 length = 5;
+//  string defaultValue = 6;
+//  string expression = 7;
+//}
+
+//message Table {
+//  string name = 1;
+//  string text = 2;
+//  string comment = 3;
+//  string charset =4;
+//  repeated Column  Columns = 5;
+//  repeated string keys = 6;
+//  repeated string indexes = 7;
+//  repeated Column derivedCols = 8;
+//}
+
+message RpcRequest {
+  map<string,string> attributes = 1;
+  string data = 2;
+}
+
+message RpcResponse {
+    int32 code = 1;
+    string message = 2;
+    string data = 3;
+}
+
+
+// 定义服务
+service Magpie {
+    rpc CreateTable(RpcRequest) returns (RpcResponse) {} // 创建表
+    rpc DeleteTable(RpcRequest) returns (RpcResponse) {} // 删除表
+    rpc DescribeTable(RpcRequest) returns (RpcResponse) {} // 查看数据结构信息
+    rpc ListTables(RpcRequest) returns (RpcResponse) {} // 列出所有表格
+}

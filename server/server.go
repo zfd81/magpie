@@ -2,31 +2,65 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
-	"github.com/zfd81/magpie/rpc/grpc"
+	pb "github.com/zfd81/magpie/api/magpiepb"
 
 	"github.com/zfd81/magpie/meta"
 )
 
 type Server struct{}
 
-func (s *Server) CreateTable(ctx context.Context, tbl *grpc.Table) (*grpc.Response, error) {
-	info := meta.TableInfo{
-		Name:    tbl.Name,
-		Text:    tbl.Text,
-		Comment: tbl.Comment,
-	}
-	for _, v := range tbl.Columns {
-		info.CreateColumn(v.Name, v.DataType.String())
-	}
-	info.Keys = tbl.Keys
-	info.Indexes = tbl.Indexes
-	for _, v := range tbl.DerivedCols {
-		info.CreateDerivedColumn(v.Name, v.Expression)
+func (s *Server) CreateTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	var info meta.TableInfo
+	err := json.Unmarshal([]byte(request.Data), &info)
+	if err != nil {
+		return nil, err
 	}
 	db.CreateTable(info)
-	return &grpc.Response{
+	msg := fmt.Sprintf("Table %s created successfully", info.Name)
+	fmt.Println(msg)
+	return &pb.RpcResponse{
 		Code:    200,
-		Message: "c",
+		Message: msg,
+	}, nil
+}
+
+func (s *Server) DeleteTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	name := request.Attributes["name"]
+	err := db.DeleteTable(name)
+	if err != nil {
+		return nil, err
+	}
+	msg := fmt.Sprintf("Table %s deleted successfully", name)
+	fmt.Println(msg)
+	return &pb.RpcResponse{
+		Code:    200,
+		Message: msg,
+	}, nil
+}
+
+func (s *Server) DescribeTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	tbl := db.DescribeTable(request.Attributes["name"])
+	bytes, err := json.Marshal(tbl)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
+	}, nil
+}
+
+func (s *Server) ListTables(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	tbls := db.ListTables()
+	bytes, err := json.Marshal(tbls)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
 	}, nil
 }

@@ -1,8 +1,13 @@
-package cmd
+package command
 
 import (
 	"fmt"
+	"log"
 	"time"
+
+	"google.golang.org/grpc"
+
+	pb "github.com/zfd81/magpie/api/magpiepb"
 
 	"github.com/spf13/cobra"
 	"github.com/zfd81/magpie/errors"
@@ -26,19 +31,29 @@ var (
 		Short:      cliDescription,
 		SuggestFor: []string{"rockctl"},
 	}
+	client pb.MagpieClient
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringSliceVar(&globalFlags.Endpoints, "endpoints", []string{"http://127.0.0.1:8143"}, "gRPC endpoints")
+	rootCmd.PersistentFlags().StringSliceVar(&globalFlags.Endpoints, "endpoints", []string{"127.0.0.1:8843"}, "gRPC endpoints")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.User, "user", "", "username[:password] for authentication (prompt if password is not supplied)")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.Password, "password", "", "password for authentication (if this option is used, --user option shouldn't include password)")
 
 	rootCmd.AddCommand(
 		NewVersionCommand(),
+		NewTableCommand(),
 	)
 }
 
 func Execute() {
+	address := globalFlags.Endpoints[0]
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	client = pb.NewMagpieClient(conn)
 	if err := rootCmd.Execute(); err != nil {
 		ExitWithError(ExitError, err)
 	}
@@ -48,6 +63,6 @@ func Print(msg string) {
 	fmt.Printf("[INFO] %s \n", msg)
 }
 
-func Error(msg string) {
-	fmt.Printf("[ERROR] %s \n", errors.ErrorStyleFunc(msg))
+func Errorf(format string, msgs ...interface{}) {
+	fmt.Printf("[ERROR] %s \n", errors.ErrorStyleFunc(fmt.Sprintf(format, msgs...)))
 }
