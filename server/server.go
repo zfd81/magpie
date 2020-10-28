@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"time"
 
 	"github.com/spf13/cast"
 
@@ -113,4 +115,29 @@ func (s *TableServer) ListTables(ctx context.Context, request *pb.RpcRequest) (*
 		Code: 200,
 		Data: string(bytes),
 	}, nil
+}
+
+type MagpieServer struct{}
+
+func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
+	startTime := time.Now()
+	fmt.Println(startTime)
+	cnt := 0
+	for {
+		r, err := stream.Recv()
+		if err == io.EOF {
+			//endTime := time.Now()
+			return stream.SendAndClose(&pb.RpcResponse{
+				Code: 200,
+				Data: cast.ToString(cnt),
+			})
+		}
+		if err != nil {
+			return err
+		}
+		cnt++
+		fmt.Println(r.Data)
+	}
+	fmt.Println(cnt)
+	return nil
 }

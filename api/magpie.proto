@@ -39,11 +39,18 @@ message RpcRequest {
   string data = 2;
 }
 
+//stream请求结构
+message StreamRequest{
+  string data = 1;
+}
+
 message RpcResponse {
     int32 code = 1;
     string message = 2;
     string data = 3;
 }
 
-
+service Magpie {
+  rpc load(stream StreamRequest) returns (RpcResponse) {} // 装载数据
+}
 

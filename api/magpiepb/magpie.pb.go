@@ -7,7 +7,11 @@
 package magpiepb
 
 import (
+	context "context"
 	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -80,6 +84,54 @@ func (x *RpcRequest) GetData() string {
 	return ""
 }
 
+//stream请求结构
+type StreamRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data string `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *StreamRequest) Reset() {
+	*x = StreamRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_magpie_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamRequest) ProtoMessage() {}
+
+func (x *StreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_magpie_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
+func (*StreamRequest) Descriptor() ([]byte, []int) {
+	return file_magpie_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *StreamRequest) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
 type RpcResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -93,7 +145,7 @@ type RpcResponse struct {
 func (x *RpcResponse) Reset() {
 	*x = RpcResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_magpie_proto_msgTypes[1]
+		mi := &file_magpie_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -106,7 +158,7 @@ func (x *RpcResponse) String() string {
 func (*RpcResponse) ProtoMessage() {}
 
 func (x *RpcResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_magpie_proto_msgTypes[1]
+	mi := &file_magpie_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -119,7 +171,7 @@ func (x *RpcResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RpcResponse.ProtoReflect.Descriptor instead.
 func (*RpcResponse) Descriptor() ([]byte, []int) {
-	return file_magpie_proto_rawDescGZIP(), []int{1}
+	return file_magpie_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RpcResponse) GetCode() int32 {
@@ -155,14 +207,19 @@ var file_magpie_proto_rawDesc = []byte{
 	0x74, 0x61, 0x1a, 0x39, 0x0a, 0x0b, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x45, 0x6e, 0x74, 0x72,
 	0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03,
 	0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x4f, 0x0a,
-	0x0b, 0x52, 0x70, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04,
-	0x63, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65,
-	0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61,
-	0x74, 0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x42, 0x0b,
-	0x5a, 0x09, 0x2f, 0x6d, 0x61, 0x67, 0x70, 0x69, 0x65, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x23, 0x0a,
+	0x0d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12,
+	0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x64, 0x61,
+	0x74, 0x61, 0x22, 0x4f, 0x0a, 0x0b, 0x52, 0x70, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52,
+	0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12,
+	0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x64,
+	0x61, 0x74, 0x61, 0x32, 0x32, 0x0a, 0x06, 0x4d, 0x61, 0x67, 0x70, 0x69, 0x65, 0x12, 0x28, 0x0a,
+	0x04, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x0e, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0c, 0x2e, 0x52, 0x70, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x42, 0x0b, 0x5a, 0x09, 0x2f, 0x6d, 0x61, 0x67, 0x70,
+	0x69, 0x65, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -177,16 +234,19 @@ func file_magpie_proto_rawDescGZIP() []byte {
 	return file_magpie_proto_rawDescData
 }
 
-var file_magpie_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_magpie_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_magpie_proto_goTypes = []interface{}{
-	(*RpcRequest)(nil),  // 0: RpcRequest
-	(*RpcResponse)(nil), // 1: RpcResponse
-	nil,                 // 2: RpcRequest.ParamsEntry
+	(*RpcRequest)(nil),    // 0: RpcRequest
+	(*StreamRequest)(nil), // 1: StreamRequest
+	(*RpcResponse)(nil),   // 2: RpcResponse
+	nil,                   // 3: RpcRequest.ParamsEntry
 }
 var file_magpie_proto_depIdxs = []int32{
-	2, // 0: RpcRequest.params:type_name -> RpcRequest.ParamsEntry
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
+	3, // 0: RpcRequest.params:type_name -> RpcRequest.ParamsEntry
+	1, // 1: Magpie.load:input_type -> StreamRequest
+	2, // 2: Magpie.load:output_type -> RpcResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -211,6 +271,18 @@ func file_magpie_proto_init() {
 			}
 		}
 		file_magpie_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StreamRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_magpie_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RpcResponse); i {
 			case 0:
 				return &v.state
@@ -229,9 +301,9 @@ func file_magpie_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_magpie_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_magpie_proto_goTypes,
 		DependencyIndexes: file_magpie_proto_depIdxs,
@@ -241,4 +313,118 @@ func file_magpie_proto_init() {
 	file_magpie_proto_rawDesc = nil
 	file_magpie_proto_goTypes = nil
 	file_magpie_proto_depIdxs = nil
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConnInterface
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion6
+
+// MagpieClient is the client API for Magpie service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type MagpieClient interface {
+	Load(ctx context.Context, opts ...grpc.CallOption) (Magpie_LoadClient, error)
+}
+
+type magpieClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMagpieClient(cc grpc.ClientConnInterface) MagpieClient {
+	return &magpieClient{cc}
+}
+
+func (c *magpieClient) Load(ctx context.Context, opts ...grpc.CallOption) (Magpie_LoadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Magpie_serviceDesc.Streams[0], "/Magpie/load", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &magpieLoadClient{stream}
+	return x, nil
+}
+
+type Magpie_LoadClient interface {
+	Send(*StreamRequest) error
+	CloseAndRecv() (*RpcResponse, error)
+	grpc.ClientStream
+}
+
+type magpieLoadClient struct {
+	grpc.ClientStream
+}
+
+func (x *magpieLoadClient) Send(m *StreamRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *magpieLoadClient) CloseAndRecv() (*RpcResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(RpcResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// MagpieServer is the server API for Magpie service.
+type MagpieServer interface {
+	Load(Magpie_LoadServer) error
+}
+
+// UnimplementedMagpieServer can be embedded to have forward compatible implementations.
+type UnimplementedMagpieServer struct {
+}
+
+func (*UnimplementedMagpieServer) Load(Magpie_LoadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Load not implemented")
+}
+
+func RegisterMagpieServer(s *grpc.Server, srv MagpieServer) {
+	s.RegisterService(&_Magpie_serviceDesc, srv)
+}
+
+func _Magpie_Load_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MagpieServer).Load(&magpieLoadServer{stream})
+}
+
+type Magpie_LoadServer interface {
+	SendAndClose(*RpcResponse) error
+	Recv() (*StreamRequest, error)
+	grpc.ServerStream
+}
+
+type magpieLoadServer struct {
+	grpc.ServerStream
+}
+
+func (x *magpieLoadServer) SendAndClose(m *RpcResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *magpieLoadServer) Recv() (*StreamRequest, error) {
+	m := new(StreamRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _Magpie_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "Magpie",
+	HandlerType: (*MagpieServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "load",
+			Handler:       _Magpie_Load_Handler,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "magpie.proto",
 }
