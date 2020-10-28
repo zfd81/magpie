@@ -91,3 +91,15 @@ func (db *boltdb) DeleteWithPrefix(prefix []byte) error {
 		return nil
 	})
 }
+
+func (db *boltdb) Count() int {
+	cnt := 0
+	db.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket([]byte(tableName)).Cursor()
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			cnt++
+		}
+		return nil
+	})
+	return cnt
+}

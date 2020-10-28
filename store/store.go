@@ -14,6 +14,7 @@ type Storage interface {
 	GetWithPrefix(prefix []byte) ([]*KeyValue, error)
 	Delete(key []byte) error
 	DeleteWithPrefix(prefix []byte) error
+	Count() int
 }
 
 type KeyValue struct {

@@ -35,7 +35,7 @@ option go_package = "/magpiepb"; // 定义包名
 //}
 
 message RpcRequest {
-  map<string,string> attributes = 1;
+  map<string,string> params = 1;
   string data = 2;
 }
 

@@ -94,8 +94,8 @@ func tableDeleteCommandFunc(cmd *cobra.Command, args []string) {
 		ExitWithError(ExitBadArgs, fmt.Errorf("table del command requires table name as its argument"))
 	}
 	request := &pb.RpcRequest{}
-	request.Attributes = map[string]string{}
-	request.Attributes["name"] = args[0]
+	request.Params = map[string]string{}
+	request.Params["name"] = args[0]
 	resp, err := client.DeleteTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
@@ -113,8 +113,8 @@ func tableDescribeCommandFunc(cmd *cobra.Command, args []string) {
 		ExitWithError(ExitBadArgs, fmt.Errorf("table desc command requires table name as its argument"))
 	}
 	request := &pb.RpcRequest{}
-	request.Attributes = map[string]string{}
-	request.Attributes["name"] = args[0]
+	request.Params = map[string]string{}
+	request.Params["name"] = args[0]
 	resp, err := client.DescribeTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())

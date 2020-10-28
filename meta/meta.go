@@ -2,7 +2,6 @@ package meta
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/zfd81/magpie/store"
 )
@@ -14,7 +13,6 @@ const (
 	DatabaseSuffix = ".db"
 	TableSuffix    = ".tbl"
 	MetaPath       = "/meta"
-	StoragePath    = "meta.db"
 )
 
 type MetaInfo interface {
@@ -25,28 +23,22 @@ type MetaInfo interface {
 	Remove() error
 }
 
-var (
-	metaDB store.Storage
-)
-
-func init() {
-	storage, err := store.New(StoragePath)
-	if err != nil {
-		log.Panicln(err)
-	}
-	metaDB = storage
-}
-
 func StoreMetadata(info MetaInfo) error {
 	data, err := json.Marshal(info)
 	if err != nil {
 		return err
 	}
-	return metaDB.Put([]byte(info.GetPath()), data)
+	return store.Put([]byte(info.GetPath()), data)
 }
 
-func LoadMetadata(info MetaInfo) error {
-	data, err := ReadMetadata(info.GetPath())
+func LoadMetadata(info MetaInfo, args ...string) error {
+	var path string
+	if args != nil && len(args) > 0 {
+		path = args[0]
+	} else {
+		path = info.GetPath()
+	}
+	data, err := store.Get([]byte(path))
 	if err != nil {
 		return err
 	}
@@ -54,17 +46,5 @@ func LoadMetadata(info MetaInfo) error {
 }
 
 func RemoveMetadata(info MetaInfo) error {
-	return metaDB.Delete([]byte(info.GetPath()))
-}
-
-func ReadMetadata(path string) ([]byte, error) {
-	return metaDB.Get([]byte(path))
-}
-
-func LoadObject(path string, info MetaInfo) error {
-	data, err := ReadMetadata(path)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(data, info)
+	return store.Delete([]byte(info.GetPath()))
 }

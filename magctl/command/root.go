@@ -31,7 +31,9 @@ var (
 		Short:      cliDescription,
 		SuggestFor: []string{"rockctl"},
 	}
-	client pb.MagpieClient
+	conn          *grpc.ClientConn
+	client        pb.MagpieClient
+	storageClient pb.StorageClient
 )
 
 func init() {
@@ -42,18 +44,21 @@ func init() {
 	rootCmd.AddCommand(
 		NewVersionCommand(),
 		NewTableCommand(),
+		NewStoreCommand(),
 	)
 }
 
 func Execute() {
 	address := globalFlags.Endpoints[0]
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	c, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
+	conn = c
 	defer conn.Close()
 	client = pb.NewMagpieClient(conn)
+	storageClient = pb.NewStorageClient(conn)
 	if err := rootCmd.Execute(); err != nil {
 		ExitWithError(ExitError, err)
 	}

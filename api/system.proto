@@ -1,0 +1,11 @@
+syntax = "proto3";
+import "magpie.proto";
+
+option go_package = "/magpiepb"; // 定义包名
+
+
+// 定义服务
+service Storage {
+    rpc Get(RpcRequest) returns (RpcResponse) {} // 根据Key或者Key前缀查看数据
+    rpc Count(RpcRequest) returns (RpcResponse) {} // 查看键值对数量
+}

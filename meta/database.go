@@ -3,6 +3,8 @@ package meta
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/zfd81/magpie/store"
 )
 
 type DatabaseInfo struct {
@@ -45,7 +47,7 @@ func (d *DatabaseInfo) CreateTable(name string) *TableInfo {
 
 func (d *DatabaseInfo) ListTables() []*TableInfo {
 	var tbls []*TableInfo
-	kvs, err := metaDB.GetWithPrefix([]byte(d.GetPath()))
+	kvs, err := store.GetWithPrefix([]byte(d.GetPath()))
 	if err != nil {
 		return tbls
 	}

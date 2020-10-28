@@ -37,6 +37,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	s := grpc.NewServer()
 	pb.RegisterMagpieServer(s, &server.Server{})
+	pb.RegisterStorageServer(s, &server.StorageServer{})
 	if err = s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
