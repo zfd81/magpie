@@ -32,7 +32,7 @@ var (
 		SuggestFor: []string{"rockctl"},
 	}
 	conn          *grpc.ClientConn
-	client        pb.MagpieClient
+	tableClient   pb.TableClient
 	storageClient pb.StorageClient
 )
 
@@ -57,7 +57,7 @@ func Execute() {
 	}
 	conn = c
 	defer conn.Close()
-	client = pb.NewMagpieClient(conn)
+	tableClient = pb.NewTableClient(conn)
 	storageClient = pb.NewStorageClient(conn)
 	if err := rootCmd.Execute(); err != nil {
 		ExitWithError(ExitError, err)

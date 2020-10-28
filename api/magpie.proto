@@ -46,10 +46,4 @@ message RpcResponse {
 }
 
 
-// 定义服务
-service Magpie {
-    rpc CreateTable(RpcRequest) returns (RpcResponse) {} // 创建表
-    rpc DeleteTable(RpcRequest) returns (RpcResponse) {} // 删除表
-    rpc DescribeTable(RpcRequest) returns (RpcResponse) {} // 查看数据结构信息
-    rpc ListTables(RpcRequest) returns (RpcResponse) {} // 列出所有表格
-}
+

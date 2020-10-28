@@ -55,9 +55,9 @@ func (s *StorageServer) Count(ctx context.Context, request *pb.RpcRequest) (*pb.
 	}, nil
 }
 
-type Server struct{}
+type TableServer struct{}
 
-func (s *Server) CreateTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+func (s *TableServer) CreateTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
 	var info meta.TableInfo
 	err := json.Unmarshal([]byte(request.Data), &info)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *Server) CreateTable(ctx context.Context, request *pb.RpcRequest) (*pb.R
 	}, nil
 }
 
-func (s *Server) DeleteTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+func (s *TableServer) DeleteTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
 	name := request.Params["name"]
 	err := db.DeleteTable(name)
 	if err != nil {
@@ -86,8 +86,13 @@ func (s *Server) DeleteTable(ctx context.Context, request *pb.RpcRequest) (*pb.R
 	}, nil
 }
 
-func (s *Server) DescribeTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+func (s *TableServer) DescribeTable(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
 	tbl := db.DescribeTable(request.Params["name"])
+	if tbl.Name == "" {
+		return &pb.RpcResponse{
+			Code: 200,
+		}, nil
+	}
 	bytes, err := json.Marshal(tbl)
 	if err != nil {
 		return nil, err
@@ -98,7 +103,7 @@ func (s *Server) DescribeTable(ctx context.Context, request *pb.RpcRequest) (*pb
 	}, nil
 }
 
-func (s *Server) ListTables(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+func (s *TableServer) ListTables(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
 	tbls := db.ListTables()
 	bytes, err := json.Marshal(tbls)
 	if err != nil {

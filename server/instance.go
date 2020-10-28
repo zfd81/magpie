@@ -20,6 +20,10 @@ func (i *Instance) CreateDatabase(info meta.DatabaseInfo) *Database {
 	return db
 }
 
+func (i *Instance) GetDatabase(name string) *Database {
+	return i.Databases[name]
+}
+
 func NewInstance(name, text string) *Instance {
 	return &Instance{
 		InstanceInfo: meta.InstanceInfo{

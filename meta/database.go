@@ -11,7 +11,7 @@ type DatabaseInfo struct {
 	Name     string       `json:"name"`
 	Text     string       `json:"text"`
 	Comment  string       `json:"comment,omitempty"`
-	Charset  string       `json:"charset"`
+	Charset  string       `json:"charset,omitempty"`
 	Instance InstanceInfo `json:"-"`
 }
 
@@ -33,16 +33,6 @@ func (i *DatabaseInfo) Load() error {
 
 func (i *DatabaseInfo) Remove() error {
 	return RemoveMetadata(i)
-}
-
-func (d *DatabaseInfo) CreateTable(name string) *TableInfo {
-	tbl := &TableInfo{
-		Name:     name,
-		Text:     name,
-		Columns:  make([]*ColumnInfo, 0, 10),
-		Database: *d,
-	}
-	return tbl
 }
 
 func (d *DatabaseInfo) ListTables() []*TableInfo {

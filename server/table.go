@@ -28,9 +28,9 @@ func (t *Table) init() {
 	for i, name := range t.Keys {
 		t.primaryKeys[i] = t.columnMapping[name]
 	}
-	for _, v := range t.DerivedCols {
-		t.columnMapping[v.Name] = NewDerivedColumn(*v)
-	}
+	//for _, v := range t.DerivedCols {
+	//	t.columnMapping[v.Name] = NewDerivedColumn(*v)
+	//}
 }
 
 func (t *Table) RowData(fields []string) (string, []interface{}, error) {
@@ -106,11 +106,11 @@ func (t *Table) FindByPrimaryKey(names []string, data map[string]interface{}) ma
 			col := t.columnMapping[v.Name]
 			rowMap[col.Name] = row[col.Index]
 		}
-		for _, v := range t.DerivedCols {
-			col := t.columnMapping[v.Name]
-			val := col.Value(rowMap)
-			rowMap[col.Name] = val
-		}
+		//for _, v := range t.DerivedCols {
+		//	col := t.columnMapping[v.Name]
+		//	val := col.Value(rowMap)
+		//	rowMap[col.Name] = val
+		//}
 		for _, name := range names {
 			result[name] = rowMap[name]
 		}

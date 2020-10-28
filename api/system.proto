@@ -9,3 +9,11 @@ service Storage {
     rpc Get(RpcRequest) returns (RpcResponse) {} // 根据Key或者Key前缀查看数据
     rpc Count(RpcRequest) returns (RpcResponse) {} // 查看键值对数量
 }
+
+// 定义服务
+service Table {
+    rpc CreateTable(RpcRequest) returns (RpcResponse) {} // 创建表
+    rpc DeleteTable(RpcRequest) returns (RpcResponse) {} // 删除表
+    rpc DescribeTable(RpcRequest) returns (RpcResponse) {} // 查看表结构信息
+    rpc ListTables(RpcRequest) returns (RpcResponse) {} // 列出所有表格
+}

@@ -77,7 +77,7 @@ func tableAddCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	request := &pb.RpcRequest{}
 	request.Data = string(definition)
-	resp, err := client.CreateTable(context.Background(), request)
+	resp, err := tableClient.CreateTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return
@@ -96,7 +96,7 @@ func tableDeleteCommandFunc(cmd *cobra.Command, args []string) {
 	request := &pb.RpcRequest{}
 	request.Params = map[string]string{}
 	request.Params["name"] = args[0]
-	resp, err := client.DeleteTable(context.Background(), request)
+	resp, err := tableClient.DeleteTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return
@@ -114,29 +114,31 @@ func tableDescribeCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	request := &pb.RpcRequest{}
 	request.Params = map[string]string{}
-	request.Params["name"] = args[0]
-	resp, err := client.DescribeTable(context.Background(), request)
+	name := args[0]
+	request.Params["name"] = name
+	resp, err := tableClient.DescribeTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return
 	}
-	var tbl meta.TableInfo
-	err = json.Unmarshal([]byte(resp.Data), &tbl)
-	if err != nil {
-		Errorf(err.Error())
-		return
+	fmt.Printf("Table[%s] details:\n", name)
+	if resp.Data != "" {
+		var tbl meta.TableInfo
+		err = json.Unmarshal([]byte(resp.Data), &tbl)
+		if err != nil {
+			Errorf(err.Error())
+			return
+		}
+		var str bytes.Buffer
+		_ = json.Indent(&str, []byte(resp.Data), "", "  ")
+		fmt.Println(str.String())
+		fmt.Println("")
 	}
-	fmt.Printf("Table[%s] details:\n", tbl.Name)
-	fmt.Println("-------------------------------------------------------")
-	var str bytes.Buffer
-	_ = json.Indent(&str, []byte(resp.Data), "", "  ")
-	fmt.Println(str.String())
-	fmt.Println("-------------------------------------------------------")
 }
 
 func tableListCommandFunc(cmd *cobra.Command, args []string) {
 	request := &pb.RpcRequest{}
-	resp, err := client.ListTables(context.Background(), request)
+	resp, err := tableClient.ListTables(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return

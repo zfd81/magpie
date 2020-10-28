@@ -5,16 +5,15 @@ import (
 )
 
 type TableInfo struct {
-	Id          string        `json:"id,omitempty"`
-	Name        string        `json:"name"`
-	Text        string        `json:"text,omitempty"`
-	Comment     string        `json:"comment,omitempty"`
-	Charset     string        `json:"charset"`
-	Columns     []*ColumnInfo `json:"cols"`
-	Keys        []string      `json:"keys"`
-	Indexes     []string      `json:"indexes,omitempty"`
-	DerivedCols []*ColumnInfo `json:"dcols,omitempty"`
-	Database    DatabaseInfo  `json:"-"`
+	Id       string        `json:"id,omitempty"`
+	Name     string        `json:"name"`
+	Text     string        `json:"text,omitempty"`
+	Comment  string        `json:"comment,omitempty"`
+	Charset  string        `json:"charset,omitempty"`
+	Columns  []*ColumnInfo `json:"cols"`
+	Keys     []string      `json:"keys"`
+	Indexes  []string      `json:"indexes,omitempty"`
+	Database DatabaseInfo  `json:"-"`
 }
 
 func (t *TableInfo) GetMName() string {
@@ -48,23 +47,7 @@ func (t *TableInfo) CreateColumn(name string, dataType string) *ColumnInfo {
 	return col
 }
 
-func (t *TableInfo) CreateDerivedColumn(name string, expr string) *ColumnInfo {
-	col := &ColumnInfo{
-		Name:       name,
-		Text:       name,
-		Expression: expr,
-	}
-	t.DerivedCols = append(t.DerivedCols, col)
-	return col
-}
-
 func (t *TableInfo) RemoveColumn(name string) *TableInfo {
-	for i, v := range t.DerivedCols { //删除衍生列
-		if v.Name == name {
-			t.DerivedCols = append(t.DerivedCols[:i], t.DerivedCols[i+1:]...)
-			return t
-		}
-	}
 	for i, v := range t.Columns { //删除基础列
 		if v.Name == name {
 			t.Columns = append(t.Columns[:i], t.Columns[i+1:]...)
