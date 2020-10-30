@@ -122,6 +122,7 @@ type MagpieServer struct{}
 func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 	startTime := time.Now()
 	fmt.Println(startTime)
+	t1 := time.Now()
 	cnt := 0
 	for {
 		r, err := stream.Recv()
@@ -129,7 +130,7 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 			//endTime := time.Now()
 			return stream.SendAndClose(&pb.RpcResponse{
 				Code: 200,
-				Data: cast.ToString(cnt),
+				Data: cast.ToString(time.Since(t1)),
 			})
 		}
 		if err != nil {

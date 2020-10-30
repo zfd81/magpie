@@ -10,11 +10,18 @@ type Config struct {
 	Banner  string `mapstructure:"banner"`
 	Port    int    `mapstructure:"port"`
 	Memory  Memory `mapstructure:"memory"`
+	Etcd    Etcd   `mapstructure:"etcd"`
 }
 
 type Memory struct {
 	ExpirationTime  time.Duration `mapstructure:"expiration-time"`  // 有效期
 	CleanupInterval time.Duration `mapstructure:"cleanup-Interval"` // 清理间隔
+}
+
+type Etcd struct {
+	Endpoints      []string `mapstructure:"endpoints"`
+	DialTimeout    int      `mapstructure:"dial-timeout"`
+	RequestTimeout int      `mapstructure:"request-timeout"`
 }
 
 const (
@@ -35,6 +42,11 @@ var defaultConf = Config{
 	Memory: Memory{
 		ExpirationTime:  5 * time.Minute,
 		CleanupInterval: 10 * time.Minute,
+	},
+	Etcd: Etcd{
+		Endpoints:      []string{"127.0.0.1:2379"},
+		DialTimeout:    5,
+		RequestTimeout: 5,
 	},
 }
 
