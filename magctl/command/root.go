@@ -67,8 +67,8 @@ func Execute() {
 	}
 }
 
-func Print(msg string) {
-	fmt.Printf("[INFO] %s \n", msg)
+func Print(format string, msgs ...interface{}) {
+	fmt.Printf("[INFO] %s \n", fmt.Sprintf(format, msgs...))
 }
 
 func Errorf(format string, msgs ...interface{}) {

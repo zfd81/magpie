@@ -46,7 +46,7 @@ func newTableDeleteCommand() *cobra.Command {
 
 func newTableDescribeCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "desc <table name>",
+		Use:   "desc <table name> [file path]",
 		Short: "Describes a table",
 		Run:   tableDescribeCommandFunc,
 	}
@@ -121,7 +121,7 @@ func tableDescribeCommandFunc(cmd *cobra.Command, args []string) {
 		Errorf(err.Error())
 		return
 	}
-	fmt.Printf("Table[%s] details:\n", name)
+	var definition string
 	if resp.Data != "" {
 		var tbl meta.TableInfo
 		err = json.Unmarshal([]byte(resp.Data), &tbl)
@@ -131,7 +131,19 @@ func tableDescribeCommandFunc(cmd *cobra.Command, args []string) {
 		}
 		var str bytes.Buffer
 		_ = json.Indent(&str, []byte(resp.Data), "", "  ")
-		fmt.Println(str.String())
+		definition = str.String()
+	}
+	if len(args) > 1 {
+		path := args[1]
+		err := ioutil.WriteFile(path, []byte(definition), 0666) //写入文件(字节数组)
+		if err != nil {
+			Errorf("Error exporting table structure:%s", err.Error())
+		} else {
+			Print("Export table structure succeeded")
+		}
+	} else {
+		fmt.Printf("Table[%s] details:\n", name)
+		fmt.Println(definition)
 		fmt.Println("")
 	}
 }
