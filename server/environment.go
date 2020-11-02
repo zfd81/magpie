@@ -6,13 +6,6 @@ import (
 	"github.com/zfd81/magpie/meta"
 )
 
-const (
-	DataTypeString  = "STRING"
-	DataTypeInteger = "INT"
-	DataTypeFloat   = "FLOAT"
-	DataTypeBool    = "BOOL"
-)
-
 var (
 	cache = memory.New()
 	env   = NewInstance("magpie", "magpie")

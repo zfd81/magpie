@@ -1,5 +1,12 @@
 package meta
 
+const (
+	DataTypeString  = "STRING"
+	DataTypeInteger = "INT"
+	DataTypeFloat   = "FLOAT"
+	DataTypeBool    = "BOOL"
+)
+
 type ColumnInfo struct {
 	Name         string      `json:"name"`
 	Text         string      `json:"text,omitempty"`

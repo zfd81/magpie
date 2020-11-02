@@ -10,16 +10,16 @@ import (
 )
 
 var ConversionFuncs = map[string]func(val interface{}) interface{}{
-	DataTypeString: func(val interface{}) interface{} {
+	meta.DataTypeString: func(val interface{}) interface{} {
 		return cast.ToString(val)
 	},
-	DataTypeInteger: func(val interface{}) interface{} {
+	meta.DataTypeInteger: func(val interface{}) interface{} {
 		return cast.ToInt(val)
 	},
-	DataTypeFloat: func(val interface{}) interface{} {
+	meta.DataTypeFloat: func(val interface{}) interface{} {
 		return cast.ToFloat64(val)
 	},
-	DataTypeBool: func(val interface{}) interface{} {
+	meta.DataTypeBool: func(val interface{}) interface{} {
 		return cast.ToBool(val)
 	},
 }

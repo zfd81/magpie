@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cast"
 
-	pb "github.com/zfd81/magpie/api/magpiepb"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
 
 	"github.com/spf13/cobra"
 )

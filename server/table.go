@@ -3,6 +3,10 @@ package server
 import (
 	"strings"
 
+	"github.com/zfd81/magpie/sql"
+
+	expr "github.com/zfd81/magpie/expression"
+
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/magpie/meta"
@@ -22,8 +26,10 @@ func (t *Table) init() {
 	t.keyPrefix = t.Database.Name + "." + t.Name //初始化key前缀
 	t.primaryKeys = make([]*Column, len(t.Keys))
 	t.columnMapping = map[string]*Column{}
-	for _, v := range t.Columns {
-		t.columnMapping[v.Name] = NewColumn(*v)
+	for i, col := range t.Columns {
+		col.Index = i
+		col.Expression = col.Name
+		t.columnMapping[col.Name] = NewColumn(*col)
 	}
 	for i, name := range t.Keys {
 		t.primaryKeys[i] = t.columnMapping[name]
@@ -62,6 +68,14 @@ func (t *Table) RowKey(data map[string]interface{}) string {
 	return key.String()
 }
 
+func (t *Table) BuildExprEnv(row []interface{}) map[string]interface{} {
+	env := map[string]interface{}{}
+	for _, col := range t.Columns {
+		env[col.Name] = row[col.Index]
+	}
+	return env
+}
+
 func (t *Table) Insert(key string, row []interface{}) int {
 	return write(key, row)
 }
@@ -97,25 +111,22 @@ func (t *Table) readRow(data map[string]interface{}) []interface{} {
 	return read(key)
 }
 
-func (t *Table) FindByPrimaryKey(names []string, data map[string]interface{}) map[string]interface{} {
+func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]interface{}) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
-	row := t.RowKey(data)
-	if len(row) > 0 {
-		rowMap := map[string]interface{}{}
-		for _, v := range t.Columns {
-			col := t.columnMapping[v.Name]
-			rowMap[col.Name] = row[col.Index]
-		}
-		//for _, v := range t.DerivedCols {
-		//	col := t.columnMapping[v.Name]
-		//	val := col.Value(rowMap)
-		//	rowMap[col.Name] = val
-		//}
-		for _, name := range names {
-			result[name] = rowMap[name]
+	key := t.RowKey(conditions)
+	if key != "" {
+		row := read(key)
+		env := t.BuildExprEnv(row)
+		for _, column := range columns {
+			n, e := ParseColumn(column)
+			val, err := expr.Eval(e, env)
+			if err != nil {
+				return result, err
+			}
+			result[n] = val
 		}
 	}
-	return result
+	return result, nil
 }
 
 func (t *Table) Truncate() int {
@@ -125,15 +136,15 @@ func (t *Table) Truncate() int {
 func BuildingDataConversionFunc(table *Table) DataConversionFunc {
 	var funs []func(field interface{}) (interface{}, error)
 	for _, col := range table.Columns {
-		if strings.ToUpper(col.DataType) == DataTypeString {
+		if strings.ToUpper(col.DataType) == meta.DataTypeString {
 			funs = append(funs, func(field interface{}) (interface{}, error) {
 				return cast.ToStringE(field)
 			})
-		} else if strings.ToUpper(col.DataType) == DataTypeInteger {
+		} else if strings.ToUpper(col.DataType) == meta.DataTypeInteger {
 			funs = append(funs, func(field interface{}) (interface{}, error) {
 				return cast.ToIntE(field)
 			})
-		} else if strings.ToUpper(col.DataType) == DataTypeBool {
+		} else if strings.ToUpper(col.DataType) == meta.DataTypeBool {
 			funs = append(funs, func(field interface{}) (interface{}, error) {
 				return cast.ToBoolE(field)
 			})
@@ -154,4 +165,15 @@ func BuildingDataConversionFunc(table *Table) DataConversionFunc {
 		}
 		return data, nil
 	}
+}
+
+func ParseColumn(field *sql.Field) (name string, expr string) {
+	if field.As == "" {
+		name = field.Name
+		expr = field.Name
+	} else {
+		name = field.As
+		expr = field.Expr
+	}
+	return
 }

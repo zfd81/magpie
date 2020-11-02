@@ -10,7 +10,7 @@ import (
 
 	"github.com/zfd81/magpie/meta"
 
-	pb "github.com/zfd81/magpie/api/magpiepb"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
 
 	"github.com/spf13/cobra"
 )

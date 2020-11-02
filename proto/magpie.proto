@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+option go_package = "/magpiepb"; // 定义包名
+//option java_multiple_files = true;
+//option java_package = "io.grpc.examples.routeguide";
+//option java_outer_classname = "RouteGuideProto";
+
+//stream请求结构
+message StreamRequest{
+  string data = 1;
+}
+
+message LoadResponse {
+  int32 code = 1;
+  string name = 2; //表名
+  string start_time = 3; //开始时间
+  string end_time = 4; //结束时间
+  int64 elapsed_time = 5; //实耗时间
+  int64 record_count = 6; //记录个数
+  string message = 7; //消息
+}
+
+enum QueryType {
+  INSERT = 0;
+  DELETE = 1;
+  UPDATE = 2;
+  SELECT = 3;
+}
+
+message QueryRequest {
+  QueryType QueryType = 1;
+  string sql = 2;
+}
+
+message QueryResponse {
+  int32 code = 1;
+  string message = 2; //消息
+  string data = 3;
+}
+
+service Magpie {
+  rpc Load(stream StreamRequest) returns (LoadResponse) {} // 装载数据
+  rpc Execute(QueryRequest) returns (QueryResponse) {} // 查询数据
+}
+

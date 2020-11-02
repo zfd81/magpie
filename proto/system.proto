@@ -1,8 +1,17 @@
 syntax = "proto3";
-import "magpie.proto";
 
 option go_package = "/magpiepb"; // 定义包名
 
+message RpcRequest {
+    map<string, string> params = 1;
+    string data = 2;
+}
+
+message RpcResponse {
+    int32 code = 1;
+    string message = 2;
+    string data = 3;
+}
 
 // 定义服务
 service Storage {

@@ -15,6 +15,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	google.golang.org/grpc v1.27.0
 	sigs.k8s.io/yaml v1.2.0 // indirect
+	vitess.io/vitess v0.7.0
 )
 
 replace (

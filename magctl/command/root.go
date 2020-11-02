@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/zfd81/magpie/api/magpiepb"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
 
 	"github.com/spf13/cobra"
 	"github.com/zfd81/magpie/errors"
@@ -47,6 +47,7 @@ func init() {
 		NewTableCommand(),
 		NewStoreCommand(),
 		NewLoadCommand(),
+		NewExecuteCommand(),
 	)
 }
 

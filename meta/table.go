@@ -38,9 +38,10 @@ func (i *TableInfo) Remove() error {
 
 func (t *TableInfo) CreateColumn(name string, dataType string) *ColumnInfo {
 	col := &ColumnInfo{
-		Name:     name,
-		Text:     name,
-		DataType: dataType,
+		Name:       name,
+		Text:       name,
+		DataType:   dataType,
+		Expression: name,
 	}
 	col.Index = len(t.Columns)
 	t.Columns = append(t.Columns, col)
@@ -70,6 +71,7 @@ func (t *TableInfo) ModifyColumn(col *ColumnInfo) *TableInfo {
 	for i, v := range t.Columns {
 		if v.Name == col.Name {
 			col.Index = v.Index
+			col.Expression = col.Name
 			t.Columns[i] = col
 			break
 		}

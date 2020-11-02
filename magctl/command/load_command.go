@@ -5,8 +5,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
-	pb "github.com/zfd81/magpie/api/magpiepb"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
 
 	"github.com/spf13/cobra"
 )
@@ -53,7 +54,12 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 		cnt++
 		err = stream.Send(&pb.StreamRequest{Data: scanner.Text()})
 		if err != nil {
-			Errorf(err.Error())
+			resp, err := stream.CloseAndRecv()
+			if err != nil {
+				Errorf(err.Error())
+				return
+			}
+			Errorf(resp.Message)
 			return
 		}
 	}
@@ -62,5 +68,13 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 		Errorf(err.Error())
 		return
 	}
-	fmt.Println(resp.Data)
+	if resp.Code != 200 {
+		Errorf(resp.Message)
+	} else {
+		Print("Start time: %s", resp.StartTime)
+		Print("End time: %s", resp.EndTime)
+		Print("Elapsed time: %v", time.Duration(resp.ElapsedTime))
+		Print("Record Count: %d", resp.RecordCount)
+		Print(resp.Message)
+	}
 }

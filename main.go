@@ -7,7 +7,7 @@ import (
 
 	"github.com/zfd81/magpie/server"
 
-	pb "github.com/zfd81/magpie/api/magpiepb"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
