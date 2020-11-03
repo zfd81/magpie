@@ -31,6 +31,7 @@ func init() {
 }
 
 func startCommandFunc(cmd *cobra.Command, args []string) {
+	server.InitTables() //初始化表
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

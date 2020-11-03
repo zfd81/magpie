@@ -10,7 +10,7 @@ import (
 	pb "github.com/zfd81/magpie/proto/magpiepb"
 
 	"github.com/spf13/cobra"
-	"github.com/zfd81/magpie/errors"
+	"github.com/zfd81/magpie/errs"
 )
 
 const (
@@ -73,5 +73,5 @@ func Print(format string, msgs ...interface{}) {
 }
 
 func Errorf(format string, msgs ...interface{}) {
-	fmt.Printf("[ERROR] %s \n", errors.ErrorStyleFunc(fmt.Sprintf(format, msgs...)))
+	fmt.Printf("[ERROR] %s \n", errs.ErrorStyleFunc(fmt.Sprintf(format, msgs...)))
 }

@@ -156,7 +156,13 @@ func selectExprToField(se sqlparser.SelectExpr) (*Field, error) {
 			field.Expr = buf.String()
 			field.As = e.As.String()
 		}
-
+		et4, ok := expr.(*sqlparser.FuncExpr)
+		if ok {
+			buf := sqlparser.NewTrackedBuffer(nil)
+			et4.Format(buf)
+			field.Expr = buf.String()
+			field.As = e.As.String()
+		}
 		return field, nil
 	default:
 		return nil, fmt.Errorf("unsupported syntax: %#v", e)

@@ -6,7 +6,6 @@ require (
 	github.com/antonmedv/expr v1.8.9
 	github.com/boltdb/bolt v1.3.1
 	github.com/coreos/etcd v3.3.25+incompatible
-	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.9.0
 	github.com/golang/protobuf v1.4.1
 	github.com/google/uuid v1.1.2

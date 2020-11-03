@@ -167,12 +167,12 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 }
 
 func (s *MagpieServer) Execute(ctx context.Context, request *pb.QueryRequest) (*pb.QueryResponse, error) {
-
+	startTime := time.Now() //计算当前时间
 	stmt, err := sql.Parse(request.Sql)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("time cost: %v\n", time.Since(startTime))
 	tableName := stmt.From[0].Name
 	tbl := db.GetTable(tableName)
 	if tbl == nil {
@@ -182,15 +182,17 @@ func (s *MagpieServer) Execute(ctx context.Context, request *pb.QueryRequest) (*
 	for _, v := range stmt.Where {
 		conditions[v.Name] = string(v.Value)
 	}
-
+	fmt.Printf("time cost: %v\n", time.Since(startTime))
 	result, err := tbl.FindByPrimaryKey(stmt.Select, conditions)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("time cost: %v\n", time.Since(startTime))
 	bytes, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("time cost: %v\n", time.Since(startTime))
 	return &pb.QueryResponse{
 		Code: 200,
 		Data: string(bytes),

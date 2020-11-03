@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/json"
+
 	"github.com/zfd81/magpie/meta"
 )
 
@@ -25,6 +27,22 @@ func (d *Database) CreateTable(info meta.TableInfo) *Table {
 	tbl.Store()                                              //保存元数据
 	d.Tables[tbl.Name] = tbl
 	return tbl
+}
+
+func (d *Database) LoadTable(bytes []byte) (*Table, error) {
+	info := &meta.TableInfo{}
+	err := json.Unmarshal(bytes, info)
+	if err != nil {
+		return nil, err
+	}
+	info.Database = d.DatabaseInfo
+	tbl := &Table{
+		TableInfo: *info,
+	}
+	tbl.init()
+	tbl.dataConversionFunc = BuildingDataConversionFunc(tbl) //构建行数据转换函数
+	d.Tables[tbl.Name] = tbl
+	return tbl, nil
 }
 
 func (d *Database) DeleteTable(name string) error {
