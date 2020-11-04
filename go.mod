@@ -6,6 +6,7 @@ require (
 	github.com/antonmedv/expr v1.8.9
 	github.com/boltdb/bolt v1.3.1
 	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.9.0
 	github.com/golang/protobuf v1.4.1
 	github.com/google/uuid v1.1.2
@@ -14,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	google.golang.org/grpc v1.27.0
 	sigs.k8s.io/yaml v1.2.0 // indirect
-	vitess.io/vitess v0.7.0
+	vitess.io/vitess v3.0.0-rc.3.0.20190602171040-12bfde34629c+incompatible
 )
 
 replace (

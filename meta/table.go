@@ -5,15 +5,16 @@ import (
 )
 
 type TableInfo struct {
-	Id       string        `json:"id,omitempty"`
-	Name     string        `json:"name"`
-	Text     string        `json:"text,omitempty"`
-	Comment  string        `json:"comment,omitempty"`
-	Charset  string        `json:"charset,omitempty"`
-	Columns  []*ColumnInfo `json:"cols"`
-	Keys     []string      `json:"keys"`
-	Indexes  []string      `json:"indexes,omitempty"`
-	Database DatabaseInfo  `json:"-"`
+	Id      string        `json:"id,omitempty"`
+	Name    string        `json:"name"`
+	Text    string        `json:"text,omitempty"`
+	Comment string        `json:"comment,omitempty"`
+	Charset string        `json:"charset,omitempty"`
+	Columns []*ColumnInfo `json:"cols"`
+	Keys    []string      `json:"keys"`
+	Indexes []string      `json:"indexes,omitempty"`
+	//DerivedCols []*ColumnInfo `json:"dcols"`
+	Database DatabaseInfo `json:"-"`
 }
 
 func (t *TableInfo) GetMName() string {

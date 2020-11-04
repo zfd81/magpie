@@ -79,6 +79,10 @@ func (c *Cache) GetSlice(key string) []interface{} {
 	return []interface{}{}
 }
 
+func (c *Cache) Clear() {
+	c.c.Flush()
+}
+
 func (c *Cache) Count() int {
 	return c.c.ItemCount()
 }

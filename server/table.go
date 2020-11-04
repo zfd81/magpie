@@ -3,6 +3,8 @@ package server
 import (
 	"strings"
 
+	"github.com/zfd81/magpie/memory"
+
 	"github.com/zfd81/magpie/sql"
 
 	expr "github.com/zfd81/magpie/expression"
@@ -16,14 +18,13 @@ type DataConversionFunc func(fields []string) ([]interface{}, error)
 
 type Table struct {
 	meta.TableInfo
-	keyPrefix          string             //key前缀
-	primaryKeys        []*Column          //主键
+	primaryKeys        []*Column          //主键列
 	columnMapping      map[string]*Column //列映射
 	dataConversionFunc DataConversionFunc
+	cache              *memory.Cache
 }
 
 func (t *Table) init() {
-	t.keyPrefix = t.Database.Name + "." + t.Name //初始化key前缀
 	t.primaryKeys = make([]*Column, len(t.Keys))
 	t.columnMapping = map[string]*Column{}
 	for i, col := range t.Columns {
@@ -37,13 +38,12 @@ func (t *Table) init() {
 	//for _, v := range t.DerivedCols {
 	//	t.columnMapping[v.Name] = NewDerivedColumn(*v)
 	//}
+	t.cache = memory.New()
 }
 
 func (t *Table) RowData(fields []string) (string, []interface{}, error) {
 	rowkey := strings.Builder{}
-	rowkey.WriteString(t.keyPrefix)
 	for _, col := range t.primaryKeys {
-		rowkey.WriteString("_")
 		rowkey.WriteString(cast.ToString(fields[col.Index]))
 	}
 	row, err := t.dataConversionFunc(fields)
@@ -55,13 +55,11 @@ func (t *Table) RowData(fields []string) (string, []interface{}, error) {
 
 func (t *Table) RowKey(data map[string]interface{}) string {
 	key := strings.Builder{}
-	key.WriteString(t.keyPrefix)
 	for _, col := range t.primaryKeys {
 		val, found := data[col.Name]
 		if !found {
 			return ""
 		}
-		key.WriteString("_")
 		key.WriteString(cast.ToString(val))
 		delete(data, col.Name)
 	}
@@ -77,7 +75,8 @@ func (t *Table) BuildExprEnv(row []interface{}) map[string]interface{} {
 }
 
 func (t *Table) Insert(key string, row []interface{}) int {
-	return write(key, row)
+	t.cache.Set(key, row)
+	return 1
 }
 
 func (t *Table) DeleteByPrimaryKey(data map[string]interface{}) int {
@@ -85,7 +84,8 @@ func (t *Table) DeleteByPrimaryKey(data map[string]interface{}) int {
 	if key == "" {
 		return 0
 	}
-	return remove(key)
+	t.cache.Remove(key)
+	return 1
 }
 
 func (t *Table) UpdateByPrimaryKey(data map[string]interface{}) int {
@@ -93,14 +93,15 @@ func (t *Table) UpdateByPrimaryKey(data map[string]interface{}) int {
 	if key == "" {
 		return 0
 	}
-	row := read(key)
+	row := t.cache.GetSlice(key)
 	for k, v := range data {
 		col := t.columnMapping[k]
 		if col != nil {
 			row[col.Index] = col.Value(v)
 		}
 	}
-	return write(key, row)
+	t.cache.Set(key, row)
+	return 1
 }
 
 func (t *Table) readRow(data map[string]interface{}) []interface{} {
@@ -108,14 +109,14 @@ func (t *Table) readRow(data map[string]interface{}) []interface{} {
 	if key == "" {
 		return nil
 	}
-	return read(key)
+	return t.cache.GetSlice(key)
 }
 
 func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]interface{}) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 	key := t.RowKey(conditions)
 	if key != "" {
-		row := read(key)
+		row := t.cache.GetSlice(key)
 		env := t.BuildExprEnv(row)
 		for _, column := range columns {
 			n, e := ParseColumn(column)
@@ -129,8 +130,8 @@ func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]int
 	return result, nil
 }
 
-func (t *Table) Truncate() int {
-	return cache.RemoveWithPrefix(t.keyPrefix)
+func (t *Table) Truncate() {
+	t.cache.Clear()
 }
 
 func BuildingDataConversionFunc(table *Table) DataConversionFunc {

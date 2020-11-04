@@ -6,7 +6,7 @@ import (
 	"vitess.io/vitess/go/vt/sqlparser"
 )
 
-func Parse(sql string) (*MQS, error) {
+func Parse(sql string) (Statement, error) {
 	stmt, err := sqlparser.Parse(sql)
 	if err != nil {
 		return nil, err
@@ -14,41 +14,41 @@ func Parse(sql string) (*MQS, error) {
 	return convert(stmt)
 }
 
-func convert(stmt sqlparser.Statement) (*MQS, error) {
-	mqs := &MQS{}
+func convert(stmt sqlparser.Statement) (Statement, error) {
 	switch n := stmt.(type) {
 	case *sqlparser.Select:
-		return mqs, convertSelect(mqs, n)
+		return convertSelect(n)
 	case *sqlparser.Insert:
-		return mqs, nil
+		return convertInsert(n)
 	case *sqlparser.Delete:
-		return mqs, nil
+		return convertDelete(n)
 	case *sqlparser.Update:
-		return mqs, nil
+		return convertUpdate(n)
 	default:
-		return mqs, fmt.Errorf("unsupported syntax: %#v", n)
+		return nil, fmt.Errorf("unsupported syntax: %#v", n)
 	}
 }
 
-func convertSelect(mqs *MQS, s *sqlparser.Select) error {
+func convertSelect(s *sqlparser.Select) (Statement, error) {
 	tables, err := tableExprsToTables(s.From)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	mqs.From = tables
+	stmt := &SelectStatement{}
+	stmt.From = tables
 	if s.Where != nil {
 		conditions, err := whereToFilter(s.Where)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		mqs.Where = conditions
+		stmt.Where = conditions
 	}
 	fields, err := selectExprsToFields(s.SelectExprs)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	mqs.Select = fields
-	return nil
+	stmt.Select = fields
+	return stmt, nil
 }
 
 func tableExprsToTables(te sqlparser.TableExprs) ([]*TableItem, error) {
@@ -90,7 +90,6 @@ func whereToFilter(w *sqlparser.Where) ([]*Condition, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return conditions, nil
 }
 
@@ -121,13 +120,13 @@ func exprToExpression(conditions *[]*Condition, e sqlparser.Expr) error {
 }
 
 func selectExprsToFields(se sqlparser.SelectExprs) ([]*Field, error) {
-	var fields []*Field
-	for _, e := range se {
+	fields := make([]*Field, len(se))
+	for i, e := range se {
 		field, err := selectExprToField(e)
 		if err != nil {
 			return fields, err
 		}
-		fields = append(fields, field)
+		fields[i] = field
 	}
 	return fields, nil
 }
@@ -137,29 +136,12 @@ func selectExprToField(se sqlparser.SelectExpr) (*Field, error) {
 	case *sqlparser.AliasedExpr:
 		field := &Field{}
 		expr := e.Expr
-		et1, ok := expr.(*sqlparser.ColName)
-		if ok {
-			field.Name = et1.Name.String()
-		}
-		et2, ok := expr.(*sqlparser.BinaryExpr)
-		if ok {
+		switch f := expr.(type) {
+		case *sqlparser.ColName:
+			field.Name = f.Name.String()
+		default:
 			buf := sqlparser.NewTrackedBuffer(nil)
-			et2.Format(buf)
-			field.Expr = buf.String()
-			field.As = e.As.String()
-		}
-
-		et3, ok := expr.(*sqlparser.ComparisonExpr)
-		if ok {
-			buf := sqlparser.NewTrackedBuffer(nil)
-			et3.Format(buf)
-			field.Expr = buf.String()
-			field.As = e.As.String()
-		}
-		et4, ok := expr.(*sqlparser.FuncExpr)
-		if ok {
-			buf := sqlparser.NewTrackedBuffer(nil)
-			et4.Format(buf)
+			f.Format(buf)
 			field.Expr = buf.String()
 			field.As = e.As.String()
 		}
@@ -167,4 +149,88 @@ func selectExprToField(se sqlparser.SelectExpr) (*Field, error) {
 	default:
 		return nil, fmt.Errorf("unsupported syntax: %#v", e)
 	}
+}
+
+func convertInsert(i *sqlparser.Insert) (Statement, error) {
+	stmt := &InsertStatement{}
+	stmt.Table = i.Table.Name.String()
+	cols := i.Columns
+	if cols != nil {
+		for _, c := range cols {
+			stmt.Columns = append(stmt.Columns, c.String())
+		}
+	}
+	rows, ok := i.Rows.(sqlparser.Values)
+	if ok {
+		for _, r := range rows {
+			row := &Row{}
+			for _, f := range r {
+				switch t := f.(type) {
+				case *sqlparser.SQLVal:
+					row.Append(string(t.Val))
+				default:
+					buf := sqlparser.NewTrackedBuffer(nil)
+					t.Format(buf)
+					row.Append(buf.String())
+				}
+			}
+			stmt.Rows = append(stmt.Rows, row)
+		}
+	}
+	return stmt, nil
+}
+
+func convertDelete(d *sqlparser.Delete) (Statement, error) {
+	tables, err := tableExprsToTables(d.TableExprs)
+	if err != nil {
+		return nil, err
+	}
+	stmt := &DeleteStatement{}
+	stmt.Table = tables[0].Name
+
+	if d.Where != nil {
+		conditions, err := whereToFilter(d.Where)
+		if err != nil {
+			return nil, err
+		}
+		stmt.Where = conditions
+	}
+
+	return stmt, nil
+}
+
+func convertUpdate(u *sqlparser.Update) (Statement, error) {
+	tables, err := tableExprsToTables(u.TableExprs)
+	if err != nil {
+		return nil, err
+	}
+	stmt := &UpdateStatement{}
+	stmt.Table = tables[0].Name
+	fields, err := updateExprsToFields(u.Exprs)
+	if err != nil {
+		return nil, err
+	}
+	stmt.Fields = fields
+	if u.Where != nil {
+		conditions, err := whereToFilter(u.Where)
+		if err != nil {
+			return nil, err
+		}
+		stmt.Where = conditions
+	}
+	return stmt, nil
+}
+
+func updateExprsToFields(e sqlparser.UpdateExprs) ([]*Field, error) {
+	fields := make([]*Field, len(e))
+	for i, updateExpr := range e {
+		field := &Field{}
+		field.Name = updateExpr.Name.Name.String()
+
+		buf := sqlparser.NewTrackedBuffer(nil)
+		updateExpr.Expr.Format(buf)
+		field.Expr = buf.String()
+		fields[i] = field
+	}
+	return fields, nil
 }
