@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
+	"github.com/zfd81/magpie/cluster"
 	"github.com/zfd81/magpie/server"
 
 	pb "github.com/zfd81/magpie/proto/magpiepb"
@@ -31,7 +33,8 @@ func init() {
 }
 
 func startCommandFunc(cmd *cobra.Command, args []string) {
-	server.InitTables() //初始化表
+	server.InitTables()                 //初始化表
+	cluster.Register(time.Now().Unix()) // 集群注册
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

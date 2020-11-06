@@ -63,9 +63,10 @@ type Field struct {
 }
 
 type TableItem struct {
-	Name string
-	Expr string
-	As   string
+	Qualifier string //限定符
+	Name      string //表名
+	Expr      string
+	As        string
 }
 
 type Condition struct {

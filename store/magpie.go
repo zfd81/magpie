@@ -1,31 +1,33 @@
 package store
 
 import (
+	"github.com/zfd81/magpie/config"
 	"github.com/zfd81/magpie/util/etcd"
 )
 
-const storagePath = "@magpie"
-
-var magpieDB Storage
+var (
+	magpieDB Storage
+	conf     = config.GetConfig()
+)
 
 func Put(key, value []byte) error {
-	_, err := etcd.Put(storagePath+string(key), string(value))
+	_, err := etcd.Put(conf.Directory+string(key), string(value))
 	return err
 }
 
 func Get(key []byte) ([]byte, error) {
-	return etcd.Get(storagePath + string(key))
+	return etcd.Get(conf.Directory + string(key))
 }
 
 func GetWithPrefix(prefix []byte) ([]*KeyValue, error) {
-	kvs, err := etcd.GetWithPrefix(storagePath + string(prefix))
+	kvs, err := etcd.GetWithPrefix(conf.Directory + string(prefix))
 	if err != nil {
 		return nil, err
 	}
 	var vals []*KeyValue
 	for _, kv := range kvs {
 		vals = append(vals, &KeyValue{
-			Key:   kv.Key[len(storagePath):],
+			Key:   kv.Key[len(conf.Directory):],
 			Value: kv.Value,
 		})
 	}
@@ -33,17 +35,17 @@ func GetWithPrefix(prefix []byte) ([]*KeyValue, error) {
 }
 
 func Delete(key []byte) error {
-	_, err := etcd.Del(storagePath + string(key))
+	_, err := etcd.Del(conf.Directory + string(key))
 	return err
 }
 
 func DeleteWithPrefix(prefix []byte) error {
-	_, err := etcd.DelWithPrefix(storagePath + string(prefix))
+	_, err := etcd.DelWithPrefix(conf.Directory + string(prefix))
 	return err
 }
 
 func Count() int {
-	kvs, err := etcd.GetWithPrefix(storagePath)
+	kvs, err := etcd.GetWithPrefix(conf.Directory)
 	if err != nil {
 		return -1
 	}

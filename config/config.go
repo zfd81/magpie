@@ -5,12 +5,14 @@ import (
 )
 
 type Config struct {
-	Name    string `mapstructure:"name"`
-	Version string `mapstructure:"version"`
-	Banner  string `mapstructure:"banner"`
-	Port    int    `mapstructure:"port"`
-	Memory  Memory `mapstructure:"memory"`
-	Etcd    Etcd   `mapstructure:"etcd"`
+	Name      string  `mapstructure:"name"`
+	Version   string  `mapstructure:"version"`
+	Banner    string  `mapstructure:"banner"`
+	Port      int     `mapstructure:"port"`
+	Directory string  `mapstructure:"directory"`
+	Memory    Memory  `mapstructure:"memory"`
+	Etcd      Etcd    `mapstructure:"etcd"`
+	Cluster   Cluster `mapstructure:"cluster"`
 }
 
 type Memory struct {
@@ -24,6 +26,11 @@ type Etcd struct {
 	RequestTimeout int      `mapstructure:"request-timeout"`
 }
 
+type Cluster struct {
+	HeartbeatInterval        int `mapstructure:"heartbeat-interval"`
+	HeartbeatRecheckInterval int `mapstructure:"heartbeat-recheck-interval"`
+}
+
 const (
 	banner_bulbhead = `
 	 __  __    __    ___  ____  ____  ____ 
@@ -35,10 +42,11 @@ const (
 )
 
 var defaultConf = Config{
-	Name:    "Magpie",
-	Version: "1.0.0",
-	Banner:  banner_bulbhead,
-	Port:    8843,
+	Name:      "Magpie",
+	Version:   "1.0.0",
+	Banner:    banner_bulbhead,
+	Port:      8843,
+	Directory: "@magpie",
 	Memory: Memory{
 		ExpirationTime:  5 * time.Minute,
 		CleanupInterval: 10 * time.Minute,
@@ -47,6 +55,10 @@ var defaultConf = Config{
 		Endpoints:      []string{"127.0.0.1:2379"},
 		DialTimeout:    5,
 		RequestTimeout: 5,
+	},
+	Cluster: Cluster{
+		HeartbeatInterval:        9,
+		HeartbeatRecheckInterval: 5,
 	},
 }
 

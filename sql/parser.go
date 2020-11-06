@@ -37,7 +37,7 @@ func convertSelect(s *sqlparser.Select) (Statement, error) {
 	stmt := &SelectStatement{}
 	stmt.From = tables
 	if s.Where != nil {
-		conditions, err := whereToFilter(s.Where)
+		conditions, err := whereToConditions(s.Where)
 		if err != nil {
 			return nil, err
 		}
@@ -72,28 +72,31 @@ func tableExprToTable(te sqlparser.TableExpr) (*TableItem, error) {
 	case *sqlparser.AliasedTableExpr:
 		switch e := t.Expr.(type) {
 		case sqlparser.TableName:
+			tableItem.Qualifier = e.Qualifier.String()
 			tableItem.Name = e.Name.String()
 			return tableItem, nil
 		case *sqlparser.Subquery:
-			return nil, nil
+			return nil, fmt.Errorf("unsupported syntax: %#v", te)
 		default:
-			return nil, fmt.Errorf("unsupported syntax: %#v", t)
+			return nil, fmt.Errorf("unsupported syntax: %#v", te)
 		}
+	case *sqlparser.JoinTableExpr:
+		return nil, fmt.Errorf("unsupported syntax: %#v", te)
 	default:
-		return nil, fmt.Errorf("unsupported syntax: %#v", t)
+		return nil, fmt.Errorf("unsupported syntax: %#v", te)
 	}
 }
 
-func whereToFilter(w *sqlparser.Where) ([]*Condition, error) {
+func whereToConditions(w *sqlparser.Where) ([]*Condition, error) {
 	conditions := []*Condition{}
-	err := exprToExpression(&conditions, w.Expr)
+	err := exprToCondition(&conditions, w.Expr)
 	if err != nil {
 		return nil, err
 	}
 	return conditions, nil
 }
 
-func exprToExpression(conditions *[]*Condition, e sqlparser.Expr) error {
+func exprToCondition(conditions *[]*Condition, e sqlparser.Expr) error {
 	switch v := e.(type) {
 	default:
 		return fmt.Errorf("unsupported syntax: %#v", e)
@@ -107,11 +110,11 @@ func exprToExpression(conditions *[]*Condition, e sqlparser.Expr) error {
 		*conditions = append(*conditions, condition)
 		return nil
 	case *sqlparser.AndExpr:
-		err := exprToExpression(conditions, v.Left)
+		err := exprToCondition(conditions, v.Left)
 		if err != nil {
 			return err
 		}
-		err = exprToExpression(conditions, v.Right)
+		err = exprToCondition(conditions, v.Right)
 		if err != nil {
 			return err
 		}
@@ -189,7 +192,7 @@ func convertDelete(d *sqlparser.Delete) (Statement, error) {
 	stmt.Table = tables[0].Name
 
 	if d.Where != nil {
-		conditions, err := whereToFilter(d.Where)
+		conditions, err := whereToConditions(d.Where)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +215,7 @@ func convertUpdate(u *sqlparser.Update) (Statement, error) {
 	}
 	stmt.Fields = fields
 	if u.Where != nil {
-		conditions, err := whereToFilter(u.Where)
+		conditions, err := whereToConditions(u.Where)
 		if err != nil {
 			return nil, err
 		}

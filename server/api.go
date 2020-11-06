@@ -172,29 +172,34 @@ func (s *MagpieServer) Execute(ctx context.Context, request *pb.QueryRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("time cost: %v\n", time.Since(startTime))
-	tableName := stmt.From[0].Name
-	tbl := db.GetTable(tableName)
-	if tbl == nil {
-		return nil, fmt.Errorf("table %s does not exist", tableName)
+	switch stmt := stmt.(type) {
+	case *sql.SelectStatement:
+
+		fmt.Printf("time cost: %v\n", time.Since(startTime))
+		tableName := stmt.From[0].Name
+		tbl := db.GetTable(tableName)
+		if tbl == nil {
+			return nil, fmt.Errorf("table %s does not exist", tableName)
+		}
+		conditions := map[string]interface{}{}
+		for _, v := range stmt.Where {
+			conditions[v.Name] = string(v.Value)
+		}
+		fmt.Printf("time cost: %v\n", time.Since(startTime))
+		result, err := tbl.FindByPrimaryKey(stmt.Select, conditions)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("time cost: %v\n", time.Since(startTime))
+		bytes, err := json.Marshal(result)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("time cost: %v\n", time.Since(startTime))
+		return &pb.QueryResponse{
+			Code: 200,
+			Data: string(bytes),
+		}, nil
 	}
-	conditions := map[string]interface{}{}
-	for _, v := range stmt.Where {
-		conditions[v.Name] = string(v.Value)
-	}
-	fmt.Printf("time cost: %v\n", time.Since(startTime))
-	result, err := tbl.FindByPrimaryKey(stmt.Select, conditions)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("time cost: %v\n", time.Since(startTime))
-	bytes, err := json.Marshal(result)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("time cost: %v\n", time.Since(startTime))
-	return &pb.QueryResponse{
-		Code: 200,
-		Data: string(bytes),
-	}, nil
+	return nil, nil
 }
