@@ -50,7 +50,7 @@ func Remove(date string) error {
 
 func init() {
 	db := store.NewBolt()
-	err := db.Open("magpie-mlog.db")
+	err := db.Open("magpie-log.db")
 	if err != nil {
 		log.Panic(err)
 	}
