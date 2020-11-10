@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/cluster"
 	"github.com/zfd81/magpie/server"
@@ -30,6 +31,10 @@ var (
 
 func init() {
 	rootCmd.Flags().IntVar(&port, "port", config.GetConfig().Port, "Port to run the server")
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05", //时间格式
+	})
 }
 
 func startCommandFunc(cmd *cobra.Command, args []string) {

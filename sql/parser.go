@@ -146,7 +146,7 @@ func selectExprToField(se sqlparser.SelectExpr) (*Field, error) {
 			buf := sqlparser.NewTrackedBuffer(nil)
 			f.Format(buf)
 			field.Expr = buf.String()
-			field.As = e.As.String()
+			field.Name = e.As.String()
 		}
 		return field, nil
 	default:

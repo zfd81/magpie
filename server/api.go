@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zfd81/magpie/sql"
+	"github.com/zfd81/magpie/mlog"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cast"
 
@@ -154,52 +156,28 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 		}
 		fields := strings.SplitN(r.Data, ",", size)
 		cnt++
-		key, row, err := tbl.RowData(fields)
-		if err != nil {
-			return stream.SendAndClose(&pb.LoadResponse{
-				Code:    400,
-				Message: fmt.Sprintf("Data format error in line %d", cnt),
-			})
-		}
+		key, row := tbl.RowData(fields)
 		tbl.Insert(key, row)
 	}
 	return nil
 }
 
 func (s *MagpieServer) Execute(ctx context.Context, request *pb.QueryRequest) (*pb.QueryResponse, error) {
-	startTime := time.Now() //计算当前时间
-	stmt, err := sql.Parse(request.Sql)
+	res, err := Execute(request.Sql)
 	if err != nil {
 		return nil, err
 	}
-	switch stmt := stmt.(type) {
-	case *sql.SelectStatement:
-
-		fmt.Printf("time cost: %v\n", time.Since(startTime))
-		tableName := stmt.From[0].Name
-		tbl := db.GetTable(tableName)
-		if tbl == nil {
-			return nil, fmt.Errorf("table %s does not exist", tableName)
-		}
-		conditions := map[string]interface{}{}
-		for _, v := range stmt.Where {
-			conditions[v.Name] = string(v.Value)
-		}
-		fmt.Printf("time cost: %v\n", time.Since(startTime))
-		result, err := tbl.FindByPrimaryKey(stmt.Select, conditions)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("time cost: %v\n", time.Since(startTime))
-		bytes, err := json.Marshal(result)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("time cost: %v\n", time.Since(startTime))
-		return &pb.QueryResponse{
-			Code: 200,
-			Data: string(bytes),
-		}, nil
+	if request.QueryType != pb.QueryType_SELECT {
+		go func() {
+			err := mlog.SendLog(request.Sql)
+			if err != nil {
+				log.Error(err)
+			}
+		}()
 	}
-	return nil, nil
+	resp := &pb.QueryResponse{
+		Code: 200,
+		Data: res,
+	}
+	return resp, nil
 }

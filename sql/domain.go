@@ -1,9 +1,13 @@
 package sql
 
-type Row []interface{}
+type Row []string
 
-func (r *Row) Append(data interface{}) {
+func (r *Row) Append(data string) {
 	*r = append(*r, data)
+}
+
+func (r *Row) Get(index int) string {
+	return (*r)[index]
 }
 
 type Expression interface {
@@ -59,7 +63,17 @@ type SelectStatement struct {
 type Field struct {
 	Name string
 	Expr string
-	As   string
+}
+
+func (f *Field) GetName() string {
+	return f.Name
+}
+
+func (f *Field) GetExpr() string {
+	if f.Expr == "" {
+		return f.Name
+	}
+	return f.Expr
 }
 
 type TableItem struct {

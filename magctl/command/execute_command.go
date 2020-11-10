@@ -41,13 +41,10 @@ func executeCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("execute command requires sql as its argument"))
 	}
-	for _, v := range args {
-		fmt.Println(v)
-	}
 	startTime := time.Now() //计算当前时间
 	request := &pb.QueryRequest{}
 	sql := strings.TrimSpace(strings.Join(args, " "))
-	fmt.Println(sql)
+	Print(sql)
 	request.Sql = sql
 	sql = strings.ToUpper(sql)
 	if strings.HasPrefix(sql, "SELECT") {
@@ -67,6 +64,6 @@ func executeCommandFunc(cmd *cobra.Command, args []string) {
 		Errorf(err.Error())
 		return
 	}
-	fmt.Println(resp.Data)
+	Print(string(resp.Data))
 	Print("time cost: %v\n", time.Since(startTime))
 }

@@ -23,8 +23,7 @@ func (d *Database) CreateTable(info meta.TableInfo) *Table {
 		},
 	}
 	tbl.init()
-	tbl.dataConversionFunc = BuildingDataConversionFunc(tbl) //构建行数据转换函数
-	tbl.Store()                                              //保存元数据
+	tbl.Store() //保存元数据
 	d.Tables[tbl.Name] = tbl
 	return tbl
 }
@@ -40,7 +39,6 @@ func (d *Database) LoadTable(bytes []byte) (*Table, error) {
 		TableInfo: *info,
 	}
 	tbl.init()
-	tbl.dataConversionFunc = BuildingDataConversionFunc(tbl) //构建行数据转换函数
 	d.Tables[tbl.Name] = tbl
 	return tbl, nil
 }

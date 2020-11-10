@@ -13,6 +13,7 @@ type Config struct {
 	Memory    Memory  `mapstructure:"memory"`
 	Etcd      Etcd    `mapstructure:"etcd"`
 	Cluster   Cluster `mapstructure:"cluster"`
+	Log       Log     `mapstructure:"mlog"`
 }
 
 type Memory struct {
@@ -29,6 +30,11 @@ type Etcd struct {
 type Cluster struct {
 	HeartbeatInterval        int `mapstructure:"heartbeat-interval"`
 	HeartbeatRecheckInterval int `mapstructure:"heartbeat-recheck-interval"`
+}
+
+type Log struct {
+	ClearTaskTime  int `mapstructure:"clear-task-time"` // 每天清除日志任务的启动时间
+	ExpirationTime int `mapstructure:"expiration-time"` // 有效期
 }
 
 const (
@@ -59,6 +65,10 @@ var defaultConf = Config{
 	Cluster: Cluster{
 		HeartbeatInterval:        9,
 		HeartbeatRecheckInterval: 5,
+	},
+	Log: Log{
+		ClearTaskTime:  2,
+		ExpirationTime: 1,
 	},
 }
 

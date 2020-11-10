@@ -103,3 +103,7 @@ func (db *boltdb) Count() int {
 	})
 	return cnt
 }
+
+func NewBolt() *boltdb {
+	return &boltdb{}
+}

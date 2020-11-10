@@ -11,6 +11,8 @@ require (
 	github.com/golang/protobuf v1.4.1
 	github.com/google/uuid v1.1.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/robfig/cron/v3 v3.0.1
+	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.1
 	google.golang.org/grpc v1.27.0
@@ -20,6 +22,7 @@ require (
 
 replace (
 	github.com/golang/protobuf => github.com/golang/protobuf v1.4.3
+	github.com/sirupsen/logrus => github.com/sirupsen/logrus v1.6.0
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 	google.golang.org/protobuf => google.golang.org/protobuf v1.25.0
 )

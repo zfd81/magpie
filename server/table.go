@@ -1,6 +1,7 @@
 package server
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/zfd81/magpie/memory"
@@ -14,14 +15,11 @@ import (
 	"github.com/zfd81/magpie/meta"
 )
 
-type DataConversionFunc func(fields []string) ([]interface{}, error)
-
 type Table struct {
 	meta.TableInfo
-	primaryKeys        []*Column          //主键列
-	columnMapping      map[string]*Column //列映射
-	dataConversionFunc DataConversionFunc
-	cache              *memory.Cache
+	primaryKeys   []*Column          //主键列
+	columnMapping map[string]*Column //列映射
+	cache         *memory.Cache
 }
 
 func (t *Table) init() {
@@ -41,16 +39,25 @@ func (t *Table) init() {
 	t.cache = memory.New()
 }
 
-func (t *Table) RowData(fields []string) (string, []interface{}, error) {
+func (t *Table) GetColumn(name string) *Column {
+	return t.columnMapping[name]
+}
+
+func (t *Table) NewRow() []interface{} {
+	return make([]interface{}, len(t.Columns))
+}
+
+func (t *Table) RowData(data interface{}) (string, []interface{}) {
+	value := reflect.Indirect(reflect.ValueOf(data))
 	rowkey := strings.Builder{}
 	for _, col := range t.primaryKeys {
-		rowkey.WriteString(cast.ToString(fields[col.Index]))
+		rowkey.WriteString(cast.ToString(value.Index(col.Index).Interface()))
 	}
-	row, err := t.dataConversionFunc(fields)
-	if err != nil {
-		return "", nil, err
+	row := t.NewRow()
+	for _, col := range t.columnMapping {
+		row[col.Index] = col.Value(value.Index(col.Index).Interface())
 	}
-	return rowkey.String(), row, nil
+	return rowkey.String(), row
 }
 
 func (t *Table) RowKey(data map[string]interface{}) string {
@@ -80,28 +87,32 @@ func (t *Table) Insert(key string, row []interface{}) int {
 }
 
 func (t *Table) DeleteByPrimaryKey(data map[string]interface{}) int {
+	cnt := 0
 	key := t.RowKey(data)
-	if key == "" {
-		return 0
+	if key != "" {
+		t.cache.Remove(key)
+		cnt++
 	}
-	t.cache.Remove(key)
-	return 1
+	return cnt
 }
 
 func (t *Table) UpdateByPrimaryKey(data map[string]interface{}) int {
+	cnt := 0
 	key := t.RowKey(data)
-	if key == "" {
-		return 0
-	}
-	row := t.cache.GetSlice(key)
-	for k, v := range data {
-		col := t.columnMapping[k]
-		if col != nil {
-			row[col.Index] = col.Value(v)
+	if key != "" {
+		row := t.cache.GetSlice(key)
+		if len(row) > 0 {
+			for k, v := range data {
+				col := t.columnMapping[k]
+				if col != nil {
+					row[col.Index] = col.Value(v)
+				}
+			}
+			t.cache.Set(key, row)
+			cnt++
 		}
 	}
-	t.cache.Set(key, row)
-	return 1
+	return cnt
 }
 
 func (t *Table) readRow(data map[string]interface{}) []interface{} {
@@ -117,14 +128,15 @@ func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]int
 	key := t.RowKey(conditions)
 	if key != "" {
 		row := t.cache.GetSlice(key)
-		env := t.BuildExprEnv(row)
-		for _, column := range columns {
-			n, e := ParseColumn(column)
-			val, err := expr.Eval(e, env)
-			if err != nil {
-				return result, err
+		if len(row) > 0 {
+			env := t.BuildExprEnv(row)
+			for _, column := range columns {
+				val, err := expr.Eval(column.GetExpr(), env)
+				if err != nil {
+					return result, err
+				}
+				result[column.GetName()] = val
 			}
-			result[n] = val
 		}
 	}
 	return result, nil
@@ -132,49 +144,4 @@ func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]int
 
 func (t *Table) Truncate() {
 	t.cache.Clear()
-}
-
-func BuildingDataConversionFunc(table *Table) DataConversionFunc {
-	var funs []func(field interface{}) (interface{}, error)
-	for _, col := range table.Columns {
-		if strings.ToUpper(col.DataType) == meta.DataTypeString {
-			funs = append(funs, func(field interface{}) (interface{}, error) {
-				return cast.ToStringE(field)
-			})
-		} else if strings.ToUpper(col.DataType) == meta.DataTypeInteger {
-			funs = append(funs, func(field interface{}) (interface{}, error) {
-				return cast.ToIntE(field)
-			})
-		} else if strings.ToUpper(col.DataType) == meta.DataTypeBool {
-			funs = append(funs, func(field interface{}) (interface{}, error) {
-				return cast.ToBoolE(field)
-			})
-		} else {
-			funs = append(funs, func(field interface{}) (interface{}, error) {
-				return cast.ToStringE(field)
-			})
-		}
-	}
-	return func(fields []string) ([]interface{}, error) {
-		var data []interface{}
-		for i, v := range funs {
-			val, err := v(fields[i])
-			if err != nil {
-				return data, nil
-			}
-			data = append(data, val)
-		}
-		return data, nil
-	}
-}
-
-func ParseColumn(field *sql.Field) (name string, expr string) {
-	if field.As == "" {
-		name = field.Name
-		expr = field.Name
-	} else {
-		name = field.As
-		expr = field.Expr
-	}
-	return
 }

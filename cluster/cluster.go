@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"net"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/zfd81/magpie/mlog"
+	"github.com/zfd81/magpie/server"
+
 	"github.com/zfd81/magpie/config"
 
 	"github.com/coreos/etcd/clientv3"
@@ -18,6 +22,7 @@ const (
 	ClusterDirectory = "/cluster"
 	LeaderDirectory  = "/leader"
 	MemberDirectory  = "/members"
+	LogDirectory     = "/mlog"
 )
 
 var (
@@ -38,6 +43,10 @@ func GetLeaderPath() string {
 
 func GetMemberPath() string {
 	return GetClusterPath() + MemberDirectory
+}
+
+func GetLogPath() string {
+	return GetClusterPath() + LogDirectory
 }
 
 func GetNode() *Node {
@@ -76,6 +85,12 @@ func Register(startUpTime int64) error {
 
 	//监听集群结点变化
 	etcd.WatchWithPrefix(mpath, clusterWatcher)
+
+	mlog.Key = GetLogPath()
+	mlog.Node = fmt.Sprintf("%s:%d", node.Address, node.Port)
+	//监听日志结点变化
+	etcd.WatchWithPrefix(GetLogPath(), logWatcher)
+	StartScheduler() //启动计划程序
 
 	//加载现有结点
 	kvs, err := etcd.GetWithPrefix(mpath)
@@ -117,6 +132,21 @@ func clusterWatcher(operType etcd.OperType, key []byte, value []byte, createRevi
 	}
 }
 
+func logWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
+	entry := &mlog.Entry{}
+	err := json.Unmarshal(value, entry)
+	if err != nil {
+		log.Error(err)
+	}
+	if entry.Node != mlog.Node {
+		log.WithFields(log.Fields{
+			"node":      entry.Node,
+			"timestamp": entry.Timestamp,
+		}).Info(entry.Data)
+		server.Execute(entry.Data)
+		mlog.Append(entry)
+	}
+}
 func addNode(key []byte, value []byte) *Node {
 	node := &Node{}
 	err := json.Unmarshal(value, node)

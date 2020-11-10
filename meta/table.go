@@ -88,12 +88,3 @@ func (t *TableInfo) GetColumnIndex(name string) int {
 	}
 	return -1
 }
-
-func (t *TableInfo) GetColumn(name string) *ColumnInfo {
-	for _, v := range t.Columns {
-		if v.Name == name {
-			return v
-		}
-	}
-	return nil
-}
