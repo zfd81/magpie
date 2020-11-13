@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zfd81/magpie/cluster"
+
 	"github.com/zfd81/magpie/mlog"
 
 	log "github.com/sirupsen/logrus"
@@ -168,14 +170,28 @@ func (s *MagpieServer) Execute(ctx context.Context, request *pb.QueryRequest) (*
 		return nil, err
 	}
 	if request.QueryType != pb.QueryType_SELECT {
-		go func() {
-			err := mlog.SendLog(request.Sql)
-			if err != nil {
-				log.Error(err)
-			}
-		}()
+		cluster.Broadcast(request.Sql)
 	}
 	resp := &pb.QueryResponse{
+		Code: 200,
+		Data: res,
+	}
+	return resp, nil
+}
+
+type LogServer struct{}
+
+func (l *LogServer) Apply(ctx context.Context, entry *pb.Entry) (*pb.RpcResponse, error) {
+	log.WithFields(log.Fields{
+		"from":      fmt.Sprintf("%s:%d", entry.Address, entry.Port),
+		"timestamp": entry.Timestamp,
+	}).Info(entry.Data)
+	res, err := Execute(entry.Data)
+	if err != nil {
+		return nil, err
+	}
+	mlog.Append(entry)
+	resp := &pb.RpcResponse{
 		Code: 200,
 		Data: res,
 	}

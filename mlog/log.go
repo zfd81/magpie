@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/protobuf/proto"
 
-	"github.com/zfd81/magpie/util/etcd"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/store"
 )
@@ -15,10 +17,14 @@ const (
 	LogTableName = "_log"
 )
 
+type Log struct {
+	Index uint64
+	Team  []byte
+	Data  []byte
+}
+
 var (
 	storage store.Storage
-	Key     string
-	Node    string
 )
 
 func timestamp() string {
@@ -39,8 +45,13 @@ func (l *Entry) Marshal() (bytes []byte) {
 type Logger struct {
 }
 
-func Append(entry *Entry) uint64 {
-	storage.Put([]byte(entry.Timestamp), entry.Marshal())
+func Append(entry *pb.Entry) uint64 {
+	bytes, err := proto.Marshal(entry)
+	if err != nil {
+		log.Error("Marshal to struct error: %v", err)
+		return 0
+	}
+	storage.Put([]byte(entry.Timestamp), bytes)
 	return 1
 }
 
@@ -48,25 +59,16 @@ func Remove(date string) error {
 	return storage.DeleteWithPrefix([]byte(date))
 }
 
-func init() {
+func OpenLogStorage(path string) error {
 	db := store.NewBolt()
-	err := db.Open("magpie-log.db")
+	err := db.Open(path)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 	err = db.CreateTable(LogTableName)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 	storage = db
-}
-
-func SendLog(data string) error {
-	entry := &Entry{
-		Data:      data,
-		Node:      Node,
-		Timestamp: timestamp(),
-	}
-	_, err := etcd.Put(Key, string(entry.Marshal()))
-	return err
+	return nil
 }

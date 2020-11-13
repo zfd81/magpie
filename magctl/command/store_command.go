@@ -56,6 +56,10 @@ func storeGetCommandFunc(cmd *cobra.Command, args []string) {
 	request.Params = map[string]string{}
 	request.Params["key"] = args[0]
 	request.Params["prefix"] = cast.ToString(getPrefix)
+
+	conn := GetConnection()
+	defer conn.Close()
+	storageClient = pb.NewStorageClient(conn)
 	resp, err := storageClient.Get(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())

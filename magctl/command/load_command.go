@@ -25,6 +25,9 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("load command requires table name and data file as its argument"))
 	}
+	conn := GetConnection()
+	defer conn.Close()
+	magpieClient = pb.NewMagpieClient(conn)
 	stream, err := magpieClient.Load(context.Background())
 	if err != nil {
 		Errorf(err.Error())

@@ -6,15 +6,14 @@ package magpiepb
 import (
 	context "context"
 	fmt "fmt"
-	math "math"
-
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	math "math"
 )
 
-// Reference imports to suppress errs if they are not otherwise used.
+// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
@@ -322,7 +321,7 @@ var fileDescriptor_f97d22a07cda9df9 = []byte{
 	0x00, 0x00, 0xff, 0xff, 0xa1, 0xf7, 0x72, 0xaa, 0x58, 0x02, 0x00, 0x00,
 }
 
-// Reference imports to suppress errs if they are not otherwise used.
+// Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
 

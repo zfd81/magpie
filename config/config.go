@@ -8,7 +8,8 @@ type Config struct {
 	Name      string  `mapstructure:"name"`
 	Version   string  `mapstructure:"version"`
 	Banner    string  `mapstructure:"banner"`
-	Port      int     `mapstructure:"port"`
+	Port      int64   `mapstructure:"port"`
+	Team      string  `mapstructure:"team"`
 	Directory string  `mapstructure:"directory"`
 	Memory    Memory  `mapstructure:"memory"`
 	Etcd      Etcd    `mapstructure:"etcd"`
@@ -51,7 +52,8 @@ var defaultConf = Config{
 	Name:      "Magpie",
 	Version:   "1.0.0",
 	Banner:    banner_bulbhead,
-	Port:      8843,
+	Port:      8143,
+	Team:      "magpie",
 	Directory: "@magpie",
 	Memory: Memory{
 		ExpirationTime:  5 * time.Minute,

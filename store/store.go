@@ -1,5 +1,7 @@
 package store
 
+var tableName = "_tag"
+
 // Driver is the interface that must be implemented by a KV storage.
 type Driver interface {
 	// Open returns a new Storage.

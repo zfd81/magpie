@@ -59,6 +59,9 @@ func executeCommandFunc(cmd *cobra.Command, args []string) {
 		Errorf("syntax error: %s", request.Sql)
 		return
 	}
+	conn := GetConnection()
+	defer conn.Close()
+	magpieClient = pb.NewMagpieClient(conn)
 	resp, err := magpieClient.Execute(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())

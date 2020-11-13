@@ -77,7 +77,7 @@ func tableAddCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	request := &pb.RpcRequest{}
 	request.Data = string(definition)
-	resp, err := tableClient.CreateTable(context.Background(), request)
+	resp, err := GetTableClient().CreateTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return
@@ -96,7 +96,7 @@ func tableDeleteCommandFunc(cmd *cobra.Command, args []string) {
 	request := &pb.RpcRequest{}
 	request.Params = map[string]string{}
 	request.Params["name"] = args[0]
-	resp, err := tableClient.DeleteTable(context.Background(), request)
+	resp, err := GetTableClient().DeleteTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return
@@ -116,7 +116,7 @@ func tableDescribeCommandFunc(cmd *cobra.Command, args []string) {
 	request.Params = map[string]string{}
 	name := args[0]
 	request.Params["name"] = name
-	resp, err := tableClient.DescribeTable(context.Background(), request)
+	resp, err := GetTableClient().DescribeTable(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return
@@ -150,7 +150,7 @@ func tableDescribeCommandFunc(cmd *cobra.Command, args []string) {
 
 func tableListCommandFunc(cmd *cobra.Command, args []string) {
 	request := &pb.RpcRequest{}
-	resp, err := tableClient.ListTables(context.Background(), request)
+	resp, err := GetTableClient().ListTables(context.Background(), request)
 	if err != nil {
 		Errorf(err.Error())
 		return

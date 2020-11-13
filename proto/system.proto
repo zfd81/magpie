@@ -7,22 +7,36 @@ message RpcRequest {
     string data = 2;
 }
 
+message Entry{
+    uint64 index = 1;
+    string data = 2;
+    string team = 3;
+    string address =4;
+    int64 port =5;
+    string timestamp=6;
+}
+
 message RpcResponse {
     int32 code = 1;
     string message = 2;
     string data = 3;
 }
 
-// 定义服务
+// 定义存储服务
 service Storage {
     rpc Get(RpcRequest) returns (RpcResponse) {} // 根据Key或者Key前缀查看数据
     rpc Count(RpcRequest) returns (RpcResponse) {} // 查看键值对数量
 }
 
-// 定义服务
+// 定义表服务
 service Table {
     rpc CreateTable(RpcRequest) returns (RpcResponse) {} // 创建表
     rpc DeleteTable(RpcRequest) returns (RpcResponse) {} // 删除表
     rpc DescribeTable(RpcRequest) returns (RpcResponse) {} // 查看表结构信息
     rpc ListTables(RpcRequest) returns (RpcResponse) {} // 列出所有表格
+}
+
+// 定义日志服务
+service Log {
+    rpc apply(Entry) returns (RpcResponse) {} // 请求日志
 }
