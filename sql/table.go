@@ -1,4 +1,4 @@
-package server
+package sql
 
 import (
 	"reflect"
@@ -6,9 +6,7 @@ import (
 
 	"github.com/zfd81/magpie/memory"
 
-	"github.com/zfd81/magpie/sql"
-
-	expr "github.com/zfd81/magpie/expression"
+	expr "github.com/zfd81/magpie/sql/expression"
 
 	"github.com/spf13/cast"
 
@@ -123,7 +121,7 @@ func (t *Table) readRow(data map[string]interface{}) []interface{} {
 	return t.cache.GetSlice(key)
 }
 
-func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]interface{}) (map[string]interface{}, error) {
+func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]interface{}) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 	key := t.RowKey(conditions)
 	if key != "" {
@@ -140,6 +138,11 @@ func (t *Table) FindByPrimaryKey(columns []*sql.Field, conditions map[string]int
 		}
 	}
 	return result, nil
+}
+
+func (t *Table) FindAll(f func(k string, v interface{})) (int, error) {
+	cnt := t.cache.GetAll(f)
+	return cnt, nil
 }
 
 func (t *Table) Truncate() {

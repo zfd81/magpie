@@ -1,7 +1,11 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -39,6 +43,10 @@ type Log struct {
 }
 
 const (
+	ConfigName = "magpie"
+	ConfigPath = "."
+	ConfigType = "yaml"
+
 	banner_bulbhead = `
 	 __  __    __    ___  ____  ____  ____ 
 	(  \/  )  /__\  / __)(  _ \(_  _)( ___)
@@ -77,7 +85,17 @@ var defaultConf = Config{
 var globalConf = defaultConf
 
 func init() {
-
+	MAGPIE_HOME := os.Getenv("MAGPIE_HOME") //获取环境变量值
+	viper.SetConfigName(ConfigName)
+	viper.AddConfigPath(ConfigPath)
+	viper.AddConfigPath(MAGPIE_HOME)
+	viper.SetConfigType(ConfigType)
+	if err := viper.ReadInConfig(); err == nil {
+		err = viper.Unmarshal(&globalConf)
+		if err != nil {
+			panic(fmt.Errorf("Fatal error when reading %s config, unable to decode into struct, %v", ConfigName, err))
+		}
+	}
 }
 
 func GetConfig() *Config {

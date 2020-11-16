@@ -3,40 +3,51 @@ syntax = "proto3";
 option go_package = "/magpiepb"; // 定义包名
 
 message RpcRequest {
-    map<string, string> params = 1;
-    string data = 2;
+  map<string, string> params = 1;
+  string data = 2;
 }
 
 message Entry{
-    uint64 index = 1;
-    string data = 2;
-    string team = 3;
-    string address =4;
-    int64 port =5;
-    string timestamp=6;
+  uint64 index = 1;
+  string data = 2;
+  string team = 3;
+  string address = 4;
+  int64 port = 5;
+  string timestamp = 6;
 }
 
 message RpcResponse {
-    int32 code = 1;
-    string message = 2;
-    string data = 3;
+  int32 code = 1;
+  string message = 2;
+  string data = 3;
+}
+
+//stream响应结构
+message StreamResponse{
+  string data = 1;
 }
 
 // 定义存储服务
 service Storage {
-    rpc Get(RpcRequest) returns (RpcResponse) {} // 根据Key或者Key前缀查看数据
-    rpc Count(RpcRequest) returns (RpcResponse) {} // 查看键值对数量
+  rpc Get(RpcRequest) returns (RpcResponse) {} // 根据Key或者Key前缀查看数据
+  rpc Count(RpcRequest) returns (RpcResponse) {} // 查看键值对数量
 }
 
-// 定义表服务
-service Table {
-    rpc CreateTable(RpcRequest) returns (RpcResponse) {} // 创建表
-    rpc DeleteTable(RpcRequest) returns (RpcResponse) {} // 删除表
-    rpc DescribeTable(RpcRequest) returns (RpcResponse) {} // 查看表结构信息
-    rpc ListTables(RpcRequest) returns (RpcResponse) {} // 列出所有表格
+// 定义元数据服务
+service Meta {
+  rpc CreateTable(RpcRequest) returns (RpcResponse) {} // 创建表
+  rpc DeleteTable(RpcRequest) returns (RpcResponse) {} // 删除表
+  rpc DescribeTable(RpcRequest) returns (RpcResponse) {} // 查看表结构信息
+  rpc ListTables(RpcRequest) returns (RpcResponse) {} // 列出所有表格
 }
 
 // 定义日志服务
 service Log {
-    rpc apply(Entry) returns (RpcResponse) {} // 请求日志
+  rpc apply(Entry) returns (RpcResponse) {} // 请求日志
+}
+
+//定义集群服务
+service Cluster{
+  // 服务端流式响应
+  rpc dataSync (RpcRequest) returns (stream StreamResponse){}
 }

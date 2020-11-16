@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	env = NewInstance("magpie", "magpie")
+	env = sql.NewInstance("magpie", "magpie")
 	db  = env.CreateDatabase(meta.DatabaseInfo{
 		Name: "taglib",
 		Text: "taglib",
@@ -134,4 +134,8 @@ func Execute(query string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported syntax: ", query)
 	}
+}
+
+func GetDatabase(name string) *sql.Database {
+	return db
 }

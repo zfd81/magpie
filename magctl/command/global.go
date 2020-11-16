@@ -30,6 +30,6 @@ func GetConnection() *grpc.ClientConn {
 	return conn
 }
 
-func GetTableClient() pb.TableClient {
-	return pb.NewTableClient(GetConnection())
+func GetTableClient() pb.MetaClient {
+	return pb.NewMetaClient(GetConnection())
 }

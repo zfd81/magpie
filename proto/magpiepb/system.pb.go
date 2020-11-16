@@ -205,41 +205,85 @@ func (m *RpcResponse) GetData() string {
 	return ""
 }
 
+//stream响应结构
+type StreamResponse struct {
+	Data                 string   `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *StreamResponse) Reset()         { *m = StreamResponse{} }
+func (m *StreamResponse) String() string { return proto.CompactTextString(m) }
+func (*StreamResponse) ProtoMessage()    {}
+func (*StreamResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86a7260ebdc12f47, []int{3}
+}
+
+func (m *StreamResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StreamResponse.Unmarshal(m, b)
+}
+func (m *StreamResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StreamResponse.Marshal(b, m, deterministic)
+}
+func (m *StreamResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StreamResponse.Merge(m, src)
+}
+func (m *StreamResponse) XXX_Size() int {
+	return xxx_messageInfo_StreamResponse.Size(m)
+}
+func (m *StreamResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_StreamResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StreamResponse proto.InternalMessageInfo
+
+func (m *StreamResponse) GetData() string {
+	if m != nil {
+		return m.Data
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*RpcRequest)(nil), "RpcRequest")
 	proto.RegisterMapType((map[string]string)(nil), "RpcRequest.ParamsEntry")
 	proto.RegisterType((*Entry)(nil), "Entry")
 	proto.RegisterType((*RpcResponse)(nil), "RpcResponse")
+	proto.RegisterType((*StreamResponse)(nil), "StreamResponse")
 }
 
 func init() { proto.RegisterFile("system.proto", fileDescriptor_86a7260ebdc12f47) }
 
 var fileDescriptor_86a7260ebdc12f47 = []byte{
-	// 375 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xc1, 0x6a, 0xe3, 0x30,
-	0x10, 0x86, 0x57, 0x71, 0xe4, 0x90, 0x71, 0x16, 0x16, 0x11, 0x58, 0x11, 0x16, 0x36, 0x98, 0x65,
-	0xc9, 0x86, 0xc5, 0x81, 0xec, 0x65, 0xdb, 0x63, 0x93, 0xd2, 0x4b, 0xa0, 0xc5, 0xe9, 0xa9, 0x37,
-	0x39, 0x1e, 0x82, 0xa9, 0x6d, 0xa9, 0x92, 0x52, 0xea, 0x77, 0xe8, 0xa5, 0x6f, 0xd3, 0xc7, 0x2b,
-	0x96, 0x93, 0x26, 0x94, 0x12, 0x72, 0xfb, 0xff, 0x99, 0x6f, 0x34, 0xbf, 0x84, 0xa0, 0x67, 0x2a,
-	0x63, 0xb1, 0x88, 0x94, 0x96, 0x56, 0x86, 0xcf, 0x04, 0x20, 0x56, 0xab, 0x18, 0x1f, 0x36, 0x68,
-	0x2c, 0x9b, 0x80, 0xaf, 0x84, 0x16, 0x85, 0xe1, 0x64, 0xe8, 0x8d, 0x82, 0xe9, 0xf7, 0x68, 0xdf,
-	0x8c, 0x6e, 0x5c, 0xe7, 0xb2, 0xb4, 0xba, 0x8a, 0xb7, 0x18, 0x63, 0xd0, 0x4e, 0x85, 0x15, 0xbc,
-	0x35, 0x24, 0xa3, 0x6e, 0xec, 0xf4, 0xe0, 0x0c, 0x82, 0x03, 0x94, 0x7d, 0x03, 0xef, 0x1e, 0x2b,
-	0x4e, 0x1c, 0x51, 0x4b, 0xd6, 0x07, 0xfa, 0x28, 0xf2, 0x0d, 0x6e, 0xa7, 0x1a, 0x73, 0xde, 0xfa,
-	0x4f, 0xc2, 0x17, 0x02, 0xb4, 0x99, 0xea, 0x03, 0xcd, 0xca, 0x14, 0x9f, 0xdc, 0x5c, 0x3b, 0x6e,
-	0xcc, 0x67, 0xeb, 0xea, 0x9a, 0x45, 0x51, 0x70, 0xaf, 0xa9, 0xd5, 0x9a, 0x71, 0xe8, 0x88, 0x34,
-	0xd5, 0x68, 0x0c, 0x6f, 0xbb, 0xf2, 0xce, 0xd6, 0xb4, 0x92, 0xda, 0x72, 0x3a, 0x24, 0x23, 0x2f,
-	0x76, 0x9a, 0xfd, 0x80, 0xae, 0xcd, 0x0a, 0x34, 0x56, 0x14, 0x8a, 0xfb, 0x8e, 0xdf, 0x17, 0xc2,
-	0x6b, 0x08, 0xdc, 0x23, 0x18, 0x25, 0x4b, 0x83, 0xf5, 0x01, 0x2b, 0x99, 0xa2, 0xcb, 0x45, 0x63,
-	0xa7, 0xeb, 0x75, 0x05, 0x1a, 0x23, 0xd6, 0xbb, 0x2b, 0xed, 0xec, 0x7b, 0x60, 0x6f, 0x1f, 0x78,
-	0xba, 0x84, 0xce, 0xd2, 0x4a, 0x5d, 0xb7, 0x43, 0xf0, 0xae, 0xd0, 0xb2, 0xe0, 0xe0, 0x99, 0x07,
-	0xbd, 0xe8, 0x60, 0x5d, 0xf8, 0x85, 0xfd, 0x02, 0x3a, 0x93, 0x9b, 0xf2, 0x38, 0x35, 0x7d, 0x25,
-	0x40, 0x6f, 0x45, 0x92, 0x23, 0x1b, 0x43, 0x30, 0xd3, 0x28, 0x2c, 0x36, 0xf6, 0xe8, 0xd9, 0x63,
-	0x08, 0xe6, 0x98, 0xe3, 0x49, 0xec, 0x5f, 0xf8, 0x3a, 0x47, 0xb3, 0xd2, 0x59, 0x72, 0x0a, 0xfd,
-	0x07, 0x60, 0x91, 0x19, 0xeb, 0x48, 0x73, 0x3c, 0xfa, 0x6f, 0xf0, 0x16, 0x72, 0xcd, 0x7e, 0x02,
-	0x15, 0x4a, 0xe5, 0x15, 0xf3, 0x23, 0xf7, 0x05, 0x3e, 0x72, 0x17, 0xc1, 0x5d, 0x77, 0x52, 0x88,
-	0xb5, 0xca, 0x50, 0x25, 0x89, 0xef, 0xfe, 0xef, 0xbf, 0xb7, 0x00, 0x00, 0x00, 0xff, 0xff, 0x4b,
-	0x8e, 0x76, 0x83, 0xcf, 0x02, 0x00, 0x00,
+	// 419 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xcf, 0x6e, 0xd3, 0x40,
+	0x10, 0xc6, 0xbb, 0x75, 0x9c, 0x90, 0x71, 0xf9, 0xa3, 0x55, 0x25, 0x56, 0x15, 0x12, 0x91, 0x55,
+	0xa1, 0x50, 0x55, 0x2e, 0x0a, 0x07, 0xfe, 0x1c, 0x49, 0x11, 0x97, 0x22, 0x90, 0xc3, 0x89, 0xdb,
+	0x26, 0x1e, 0x45, 0x16, 0x5e, 0xef, 0xb2, 0x3b, 0x46, 0xf8, 0x1d, 0xb8, 0xf0, 0x34, 0xbc, 0x1e,
+	0xda, 0x75, 0x83, 0x5d, 0x51, 0x45, 0xbd, 0x7d, 0x33, 0xfb, 0x9b, 0x6f, 0x3f, 0x8f, 0x6d, 0x38,
+	0x72, 0xad, 0x23, 0x54, 0x99, 0xb1, 0x9a, 0x74, 0xfa, 0x8b, 0x01, 0xe4, 0x66, 0x93, 0xe3, 0xf7,
+	0x06, 0x1d, 0xf1, 0x0b, 0x18, 0x1b, 0x69, 0xa5, 0x72, 0x82, 0xcd, 0xa2, 0x79, 0xb2, 0x78, 0x9c,
+	0xf5, 0x87, 0xd9, 0xe7, 0x70, 0xf2, 0xbe, 0x26, 0xdb, 0xe6, 0xd7, 0x18, 0xe7, 0x30, 0x2a, 0x24,
+	0x49, 0x71, 0x38, 0x63, 0xf3, 0x69, 0x1e, 0xf4, 0xc9, 0x1b, 0x48, 0x06, 0x28, 0x7f, 0x04, 0xd1,
+	0x37, 0x6c, 0x05, 0x0b, 0x84, 0x97, 0xfc, 0x18, 0xe2, 0x1f, 0xb2, 0x6a, 0xf0, 0x7a, 0xaa, 0x2b,
+	0xde, 0x1e, 0xbe, 0x66, 0xe9, 0x6f, 0x06, 0x71, 0x37, 0x75, 0x0c, 0x71, 0x59, 0x17, 0xf8, 0x33,
+	0xcc, 0x8d, 0xf2, 0xae, 0xb8, 0xed, 0x3a, 0xdf, 0x23, 0x94, 0x4a, 0x44, 0x5d, 0xcf, 0x6b, 0x2e,
+	0x60, 0x22, 0x8b, 0xc2, 0xa2, 0x73, 0x62, 0x14, 0xda, 0xbb, 0xd2, 0xd3, 0x46, 0x5b, 0x12, 0xf1,
+	0x8c, 0xcd, 0xa3, 0x3c, 0x68, 0xfe, 0x04, 0xa6, 0x54, 0x2a, 0x74, 0x24, 0x95, 0x11, 0xe3, 0xc0,
+	0xf7, 0x8d, 0xf4, 0x13, 0x24, 0x61, 0x09, 0xce, 0xe8, 0xda, 0xa1, 0x37, 0xd8, 0xe8, 0x02, 0x43,
+	0xae, 0x38, 0x0f, 0xda, 0x5f, 0xa7, 0xd0, 0x39, 0xb9, 0xdd, 0x3d, 0xd2, 0xae, 0xfc, 0x17, 0x38,
+	0xea, 0x03, 0xa7, 0xa7, 0xf0, 0x60, 0x45, 0x16, 0xa5, 0x1a, 0x7a, 0x06, 0x8a, 0xf5, 0xd4, 0x62,
+	0x05, 0x93, 0x15, 0x69, 0xeb, 0x4d, 0x52, 0x88, 0x3e, 0x20, 0xf1, 0x64, 0xf0, 0x32, 0x4e, 0x8e,
+	0xb2, 0x41, 0xa8, 0xf4, 0x80, 0x9f, 0x42, 0xbc, 0xd4, 0x4d, 0xbd, 0x9f, 0x5a, 0xfc, 0x61, 0x30,
+	0xfa, 0x88, 0x24, 0xf9, 0x19, 0x24, 0x4b, 0x8b, 0x92, 0xf0, 0x8b, 0x5c, 0x57, 0xb8, 0xdf, 0xfa,
+	0x0c, 0x92, 0x4b, 0xac, 0xf0, 0x4e, 0xec, 0x39, 0xdc, 0xbf, 0x44, 0xb7, 0xb1, 0xe5, 0xfa, 0x2e,
+	0xf4, 0x73, 0x80, 0xab, 0xd2, 0x51, 0x20, 0xdd, 0xfe, 0xe4, 0xcf, 0x20, 0xba, 0xd2, 0x5b, 0xfe,
+	0x14, 0x62, 0x69, 0x4c, 0xd5, 0xf2, 0x71, 0x16, 0xbe, 0x93, 0xff, 0xb8, 0x57, 0x30, 0x59, 0x56,
+	0x8d, 0x23, 0xb4, 0xfc, 0x1c, 0xee, 0xf9, 0x4d, 0xae, 0xda, 0x7a, 0x73, 0xd3, 0xfb, 0x61, 0x76,
+	0x73, 0xff, 0xe9, 0xc1, 0x0b, 0xf6, 0x2e, 0xf9, 0x3a, 0xbd, 0x50, 0x72, 0x6b, 0x4a, 0x34, 0xeb,
+	0xf5, 0x38, 0xfc, 0x1d, 0x2f, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0x95, 0x80, 0xa8, 0x83, 0x2d,
+	0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -358,180 +402,180 @@ var _Storage_serviceDesc = grpc.ServiceDesc{
 	Metadata: "system.proto",
 }
 
-// TableClient is the client API for Table service.
+// MetaClient is the client API for Meta service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type TableClient interface {
+type MetaClient interface {
 	CreateTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error)
 	DeleteTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error)
 	DescribeTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error)
 	ListTables(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error)
 }
 
-type tableClient struct {
+type metaClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewTableClient(cc *grpc.ClientConn) TableClient {
-	return &tableClient{cc}
+func NewMetaClient(cc *grpc.ClientConn) MetaClient {
+	return &metaClient{cc}
 }
 
-func (c *tableClient) CreateTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
+func (c *metaClient) CreateTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
 	out := new(RpcResponse)
-	err := c.cc.Invoke(ctx, "/Table/CreateTable", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Meta/CreateTable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *tableClient) DeleteTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
+func (c *metaClient) DeleteTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
 	out := new(RpcResponse)
-	err := c.cc.Invoke(ctx, "/Table/DeleteTable", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Meta/DeleteTable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *tableClient) DescribeTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
+func (c *metaClient) DescribeTable(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
 	out := new(RpcResponse)
-	err := c.cc.Invoke(ctx, "/Table/DescribeTable", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Meta/DescribeTable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *tableClient) ListTables(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
+func (c *metaClient) ListTables(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (*RpcResponse, error) {
 	out := new(RpcResponse)
-	err := c.cc.Invoke(ctx, "/Table/ListTables", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Meta/ListTables", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// TableServer is the server API for Table service.
-type TableServer interface {
+// MetaServer is the server API for Meta service.
+type MetaServer interface {
 	CreateTable(context.Context, *RpcRequest) (*RpcResponse, error)
 	DeleteTable(context.Context, *RpcRequest) (*RpcResponse, error)
 	DescribeTable(context.Context, *RpcRequest) (*RpcResponse, error)
 	ListTables(context.Context, *RpcRequest) (*RpcResponse, error)
 }
 
-// UnimplementedTableServer can be embedded to have forward compatible implementations.
-type UnimplementedTableServer struct {
+// UnimplementedMetaServer can be embedded to have forward compatible implementations.
+type UnimplementedMetaServer struct {
 }
 
-func (*UnimplementedTableServer) CreateTable(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
+func (*UnimplementedMetaServer) CreateTable(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTable not implemented")
 }
-func (*UnimplementedTableServer) DeleteTable(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
+func (*UnimplementedMetaServer) DeleteTable(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTable not implemented")
 }
-func (*UnimplementedTableServer) DescribeTable(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
+func (*UnimplementedMetaServer) DescribeTable(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DescribeTable not implemented")
 }
-func (*UnimplementedTableServer) ListTables(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
+func (*UnimplementedMetaServer) ListTables(ctx context.Context, req *RpcRequest) (*RpcResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTables not implemented")
 }
 
-func RegisterTableServer(s *grpc.Server, srv TableServer) {
-	s.RegisterService(&_Table_serviceDesc, srv)
+func RegisterMetaServer(s *grpc.Server, srv MetaServer) {
+	s.RegisterService(&_Meta_serviceDesc, srv)
 }
 
-func _Table_CreateTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Meta_CreateTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RpcRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TableServer).CreateTable(ctx, in)
+		return srv.(MetaServer).CreateTable(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Table/CreateTable",
+		FullMethod: "/Meta/CreateTable",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServer).CreateTable(ctx, req.(*RpcRequest))
+		return srv.(MetaServer).CreateTable(ctx, req.(*RpcRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Table_DeleteTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Meta_DeleteTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RpcRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TableServer).DeleteTable(ctx, in)
+		return srv.(MetaServer).DeleteTable(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Table/DeleteTable",
+		FullMethod: "/Meta/DeleteTable",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServer).DeleteTable(ctx, req.(*RpcRequest))
+		return srv.(MetaServer).DeleteTable(ctx, req.(*RpcRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Table_DescribeTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Meta_DescribeTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RpcRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TableServer).DescribeTable(ctx, in)
+		return srv.(MetaServer).DescribeTable(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Table/DescribeTable",
+		FullMethod: "/Meta/DescribeTable",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServer).DescribeTable(ctx, req.(*RpcRequest))
+		return srv.(MetaServer).DescribeTable(ctx, req.(*RpcRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Table_ListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Meta_ListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RpcRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TableServer).ListTables(ctx, in)
+		return srv.(MetaServer).ListTables(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Table/ListTables",
+		FullMethod: "/Meta/ListTables",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServer).ListTables(ctx, req.(*RpcRequest))
+		return srv.(MetaServer).ListTables(ctx, req.(*RpcRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Table_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "Table",
-	HandlerType: (*TableServer)(nil),
+var _Meta_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "Meta",
+	HandlerType: (*MetaServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "CreateTable",
-			Handler:    _Table_CreateTable_Handler,
+			Handler:    _Meta_CreateTable_Handler,
 		},
 		{
 			MethodName: "DeleteTable",
-			Handler:    _Table_DeleteTable_Handler,
+			Handler:    _Meta_DeleteTable_Handler,
 		},
 		{
 			MethodName: "DescribeTable",
-			Handler:    _Table_DescribeTable_Handler,
+			Handler:    _Meta_DescribeTable_Handler,
 		},
 		{
 			MethodName: "ListTables",
-			Handler:    _Table_ListTables_Handler,
+			Handler:    _Meta_ListTables_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -607,5 +651,106 @@ var _Log_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
+	Metadata: "system.proto",
+}
+
+// ClusterClient is the client API for Cluster service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ClusterClient interface {
+	// 服务端流式响应
+	DataSync(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (Cluster_DataSyncClient, error)
+}
+
+type clusterClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewClusterClient(cc *grpc.ClientConn) ClusterClient {
+	return &clusterClient{cc}
+}
+
+func (c *clusterClient) DataSync(ctx context.Context, in *RpcRequest, opts ...grpc.CallOption) (Cluster_DataSyncClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Cluster_serviceDesc.Streams[0], "/Cluster/dataSync", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &clusterDataSyncClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Cluster_DataSyncClient interface {
+	Recv() (*StreamResponse, error)
+	grpc.ClientStream
+}
+
+type clusterDataSyncClient struct {
+	grpc.ClientStream
+}
+
+func (x *clusterDataSyncClient) Recv() (*StreamResponse, error) {
+	m := new(StreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ClusterServer is the server API for Cluster service.
+type ClusterServer interface {
+	// 服务端流式响应
+	DataSync(*RpcRequest, Cluster_DataSyncServer) error
+}
+
+// UnimplementedClusterServer can be embedded to have forward compatible implementations.
+type UnimplementedClusterServer struct {
+}
+
+func (*UnimplementedClusterServer) DataSync(req *RpcRequest, srv Cluster_DataSyncServer) error {
+	return status.Errorf(codes.Unimplemented, "method DataSync not implemented")
+}
+
+func RegisterClusterServer(s *grpc.Server, srv ClusterServer) {
+	s.RegisterService(&_Cluster_serviceDesc, srv)
+}
+
+func _Cluster_DataSync_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RpcRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ClusterServer).DataSync(m, &clusterDataSyncServer{stream})
+}
+
+type Cluster_DataSyncServer interface {
+	Send(*StreamResponse) error
+	grpc.ServerStream
+}
+
+type clusterDataSyncServer struct {
+	grpc.ServerStream
+}
+
+func (x *clusterDataSyncServer) Send(m *StreamResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _Cluster_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "Cluster",
+	HandlerType: (*ClusterServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "dataSync",
+			Handler:       _Cluster_DataSync_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "system.proto",
 }

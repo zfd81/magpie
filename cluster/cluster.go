@@ -5,8 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net"
+	"strings"
 	"time"
+
+	"github.com/zfd81/magpie/server"
+
+	"google.golang.org/grpc"
 
 	pb "github.com/zfd81/magpie/proto/magpiepb"
 
@@ -86,8 +93,6 @@ func Register(startUpTime int64) error {
 	//监听集群结点变化
 	etcd.WatchWithPrefix(mpath, clusterWatcher)
 
-	StartScheduler() //启动计划程序
-
 	//加载现有结点
 	kvs, err := etcd.GetWithPrefix(mpath)
 	if err == nil {
@@ -140,6 +145,38 @@ func addNode(key []byte, value []byte) *Node {
 
 func NodeId(key []byte) string {
 	return string(key)[len(GetMemberPath())+1:]
+}
+
+func DataSync(node Node, tableName string) error {
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Address, node.Port), grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(3*time.Second))
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewClusterClient(conn)
+	request := &pb.RpcRequest{
+		Params: map[string]string{},
+	}
+	request.Params["name"] = tableName
+	stream, err := c.DataSync(context.Background(), request)
+	if err != nil {
+		return err
+	}
+	tbl := server.GetDatabase("").GetTable(tableName)
+	size := len(tbl.Columns)
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		fields := strings.SplitN(res.Data, ",", size)
+		key, row := tbl.RowData(fields)
+		tbl.Insert(key, row)
+	}
+	return nil
 }
 
 func externalIP() (net.IP, error) {

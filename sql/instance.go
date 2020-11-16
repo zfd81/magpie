@@ -1,4 +1,4 @@
-package server
+package sql
 
 import "github.com/zfd81/magpie/meta"
 

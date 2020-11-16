@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/zfd81/magpie/mlog"
+	"github.com/zfd81/magpie/server/api"
 
 	log "github.com/sirupsen/logrus"
 
@@ -42,24 +42,25 @@ func init() {
 
 func startCommandFunc(cmd *cobra.Command, args []string) {
 	config.GetConfig().Port = port
-	err := mlog.OpenLogStorage("magpie-log.db")
+	err := server.OpenLogStorage("magpie-log.db")
 	if err != nil {
-		err = mlog.OpenLogStorage(fmt.Sprintf("magpie-log-%d.db", port))
+		err = server.OpenLogStorage(fmt.Sprintf("magpie-log-%d.db", port))
 		if err != nil {
 			log.Panic(err)
 		}
 	}
 	server.InitTables()                 //初始化表
 	cluster.Register(time.Now().Unix()) // 集群注册
+	//schedule.StartScheduler() //启动计划程序
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterStorageServer(s, &server.StorageServer{})
-	pb.RegisterTableServer(s, &server.TableServer{})
-	pb.RegisterLogServer(s, &server.LogServer{})
-	pb.RegisterMagpieServer(s, &server.MagpieServer{})
+	pb.RegisterStorageServer(s, &api.StorageServer{})
+	pb.RegisterMetaServer(s, &api.MetaServer{})
+	pb.RegisterLogServer(s, &api.LogServer{})
+	pb.RegisterMagpieServer(s, &api.MagpieServer{})
 	log.Infof("Magpie server listening on: %d", config.GetConfig().Port)
 	if err = s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

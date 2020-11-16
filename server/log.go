@@ -1,4 +1,4 @@
-package mlog
+package server
 
 import (
 	"encoding/json"

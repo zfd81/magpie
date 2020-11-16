@@ -20,6 +20,16 @@ message LoadResponse {
   string message = 7; //消息
 }
 
+enum DataType {
+  STRING = 0;
+  INT = 1;
+  BOOL = 2;
+  MAP = 3;
+  STRING_ARR = 4;
+  INT_ARR = 5;
+  MAP_ARR = 6;
+}
+
 enum QueryType {
   INSERT = 0;
   DELETE = 1;
@@ -36,6 +46,7 @@ message QueryResponse {
   int32 code = 1;
   string message = 2; //消息
   string data = 3;
+  DataType DataType = 4;
 }
 
 service Magpie {

@@ -39,6 +39,15 @@ func (c *Cache) RemoveWithPrefix(prefix string) int {
 	return cnt
 }
 
+func (c *Cache) GetAll(f func(k string, v interface{})) int {
+	cnt := 0
+	for k, v := range c.c.Items() {
+		f(k, v.Object)
+		cnt++
+	}
+	return cnt
+}
+
 func (c *Cache) Get(key string) (interface{}, bool) {
 	return c.c.Get(key)
 }
