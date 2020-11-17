@@ -66,3 +66,125 @@ Query user information
 #[INFO] {"id":"id202011151212","name":"zfd","pwd":"pwd123","age":"man"} 
 
 ```
+
+## Table maintenance commands
+
+### TABLE \<subcommand\>
+
+TABLE provides commands for managing magpie cluster table information.
+
+### TABLE ADD \<table definition file\>
+
+TABLE ADD create a new table into the magpie cluster.
+
+#### Table definition
+
+```json
+{
+  "name": "userInfo",
+  "cols": [
+    {
+      "name": "id",
+      "dataType": "string"
+    },
+    {
+      "name": "name",
+      "dataType": "string"
+    },
+    {
+      "name": "pwd",
+      "dataType": "string"
+    },
+    {
+      "name": "age",
+      "dataType": "int"
+    }
+  ],
+  "keys": [
+    "id"
+  ]
+}
+```
+
+#### Example
+
+```bash
+./magctl table add define.json
+# [INFO] Table userInfo created successfully
+```
+
+### TABLE DEL \<table name\>
+
+TABLE DEL removes a table of a magpie cluster
+
+#### Example
+
+```bash
+./magctl table del userInfo
+# [INFO] Table userInfo deleted successfully
+```
+
+### TABLE DESC \<table name\> [options]
+
+TABLE DESC print table details
+
+
+#### Options
+
+- file path -- File path of table details output
+
+#### Example
+
+```bash
+./magctl table desc userInfo
+# Table[userInfo] details:
+  {
+    "name": "userInfo",
+    "cols": [
+      {
+        "name": "id",
+        "dataType": "string",
+        "expr": "id"
+      },
+      {
+        "name": "name",
+        "dataType": "string",
+        "index": 1,
+        "expr": "name"
+      },
+      {
+        "name": "pwd",
+        "dataType": "string",
+        "index": 2,
+        "expr": "pwd"
+      },
+      {
+        "name": "age",
+        "dataType": "int",
+        "index": 3,
+        "expr": "age"
+      }
+    ],
+    "keys": [
+      "id"
+    ]
+  }
+
+./magctl table desc userInfo define.json
+# [INFO] Export table structure succeeded
+```
+
+### TABLE LIST
+
+TABLE LIST prints all tables.
+
+#### Examples
+
+```bash
+./magctl table list
++----+--------------------------------+
+| SN |                           Name |
++----+--------------------------------+
+|  1 |                       userInfo |
++----+--------------------------------+
+```
