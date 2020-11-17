@@ -161,12 +161,11 @@ func tableListCommandFunc(cmd *cobra.Command, args []string) {
 		Errorf(err.Error())
 		return
 	}
-	fmt.Println("Table list:")
-	fmt.Println("-------------------------------------------------------")
-	fmt.Printf("%2s %30s\n", "", "Name")
-	fmt.Println("-------------------------------------------------------")
+	fmt.Println("+----+--------------------------------+")
+	fmt.Printf("%1s %2s %1s %30s %1s\n", "|", "SN", "|", "Name", "|")
+	fmt.Println("+----+--------------------------------+")
 	for i, tbl := range tbls {
-		fmt.Printf("%2d %30s\n", i+1, tbl.Name)
+		fmt.Printf("%1s %2d %1s %30s %1s\n", "|", i+1, "|", tbl.Name, "|")
 	}
-	fmt.Println("-------------------------------------------------------")
+	fmt.Println("+----+--------------------------------+")
 }

@@ -172,7 +172,7 @@ func removeNode(key []byte) int {
 }
 
 func DataSync() error {
-	log.Info(color.New(color.FgGreen).SprintFunc()("Start data synchronization >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"))
+	log.Info(color.New(color.FgGreen).SprintFunc()("Start data synchronization"))
 	team := GetTeam(node.Team)
 	if !team.IsLeader(node) {
 		leader := team.GetLeader()
@@ -190,6 +190,7 @@ func DataSync() error {
 		}
 		db := server.GetDatabase("")
 		for name, _ := range db.Tables {
+			startTime := time.Now()
 			request.Params["name"] = name
 			stream, err := c.DataSync(context.Background(), request)
 			if err != nil {
@@ -218,7 +219,8 @@ func DataSync() error {
 				tbl.Insert(key, row)
 			}
 			log.WithFields(log.Fields{
-				"table": name,
+				"table":   name,
+				"elapsed": time.Since(startTime),
 			}).Info("Table data synchronization succeeded")
 		}
 	}
