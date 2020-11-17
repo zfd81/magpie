@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.github.magpie</groupId>
+    <artifactId>magpie-client</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0-SNAPSHOT</version>
+
+    <modules>
+        <module>magpie-client-core</module>
+        <module>magpie-client-spring-boot-autoconfigure</module>
+        <module>magpie-client-spring-boot-starter</module>
+        <module>magpie-client-spring-boot-sample-app</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <magpie-client.version>1.0-SNAPSHOT</magpie-client.version>
+    </properties>
+
+</project>
