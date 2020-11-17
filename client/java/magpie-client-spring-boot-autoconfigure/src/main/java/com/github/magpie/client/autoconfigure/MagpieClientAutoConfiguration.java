@@ -20,7 +20,7 @@ public class MagpieClientAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public MagpieClientConfig magpieClientConfig() throws MagpieClientInitializeException {
+    public MagpieClientConfig magpieClientConfig() {
 
         Boolean enabled = magpieClientProperties.getEnabled();
         enabled = enabled == null || enabled;
@@ -32,9 +32,6 @@ public class MagpieClientAutoConfiguration {
         timeout = timeout == null ? 5 * 60 * 1000 : timeout;
 
         String serverNodes = magpieClientProperties.getServerNodes();
-        if (serverNodes == null || serverNodes.length() == 0) {
-            throw new MagpieClientInitializeException("Server nodes not defined");
-        }
 
         return MagpieClientConfig.newBuilder()
             .setEnabled(enabled)
@@ -46,7 +43,7 @@ public class MagpieClientAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public MagpieClient magpieClient(MagpieClientConfig magpieClientConfig) throws MagpieClientInitializeException {
+    public MagpieClient magpieClient(MagpieClientConfig magpieClientConfig) {
         return new MagpieClient(magpieClientConfig);
     }
 
