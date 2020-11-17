@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/zfd81/magpie/server"
 
 	"github.com/zfd81/magpie/cluster"
@@ -32,6 +34,10 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 		r, err = stream.Recv()
 		if err == io.EOF {
 			endTime := time.Now()
+			log.WithFields(log.Fields{
+				"table":   name,
+				"elapsed": time.Since(startTime),
+			}).Info("Data loaded successfully")
 			return stream.SendAndClose(&pb.LoadResponse{
 				Code:        200,
 				Name:        "",

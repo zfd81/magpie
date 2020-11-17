@@ -17,7 +17,7 @@ type Node struct {
 	Team        string `json:"team"`
 	StartUpTime int64  `json:"start-up-time"`
 	LeaderFlag  bool   `json:"-"`
-	client      pb.LogClient
+	logClient   pb.LogClient
 }
 
 func (n *Node) Connect() error {
@@ -26,7 +26,7 @@ func (n *Node) Connect() error {
 	if err != nil {
 		return err
 	}
-	n.client = pb.NewLogClient(conn)
+	n.logClient = pb.NewLogClient(conn)
 	return nil
 }
 
@@ -35,7 +35,7 @@ func (n *Node) Log(entry *pb.Entry) error {
 		"to":        fmt.Sprintf("%s:%d", n.Address, n.Port),
 		"timestamp": entry.Timestamp,
 	}).Info(entry.Data)
-	_, err := n.client.Apply(context.Background(), entry)
+	_, err := n.logClient.Apply(context.Background(), entry)
 	return err
 }
 
@@ -44,4 +44,8 @@ func NewNode(id string) *Node {
 		Id:         id,
 		LeaderFlag: false,
 	}
+}
+
+func NodeId(key []byte) string {
+	return string(key)[len(GetMemberPath())+1:]
 }

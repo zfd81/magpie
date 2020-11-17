@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/server"
 
@@ -28,7 +31,6 @@ const (
 	ClusterDirectory = "/cluster"
 	LeaderDirectory  = "/leader"
 	MemberDirectory  = "/members"
-	LogDirectory     = "/mlog"
 )
 
 var (
@@ -36,6 +38,7 @@ var (
 	node     *Node
 	leaderId string
 	members  = make(map[string]*Node)
+	teams    = make(map[string]*Team)
 	conf     = config.GetConfig()
 )
 
@@ -51,16 +54,14 @@ func GetMemberPath() string {
 	return GetClusterPath() + MemberDirectory
 }
 
-func GetLogPath() string {
-	return GetClusterPath() + LogDirectory
-}
-
-func GetNode() *Node {
-	return node
-}
-
-func GetMembers() map[string]*Node {
-	return members
+func GetTeam(name string) *Team {
+	value, found := teams[name]
+	if found {
+		return value
+	}
+	t := &Team{}
+	teams[name] = t
+	return t
 }
 
 func Register(startUpTime int64) error {
@@ -104,7 +105,14 @@ func Register(startUpTime int64) error {
 		}
 	}
 
-	//结点注册并参与选举
+	err = DataSync() //和同一团队的leader进行数据同步
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Panic("Data synchronization error")
+	}
+
+	//节点注册并参与选举
 	data, err := json.Marshal(node)
 	if err != nil {
 		return err
@@ -128,55 +136,117 @@ func clusterWatcher(operType etcd.OperType, key []byte, value []byte, createRevi
 	if operType == etcd.CREATE {
 		addNode(key, value)
 	} else if operType == etcd.MODIFY {
+		addNode(key, value)
 	} else if operType == etcd.DELETE {
-		delete(members, NodeId(key))
+		removeNode(key)
 	}
 }
 
 func addNode(key []byte, value []byte) *Node {
 	node := &Node{}
 	err := json.Unmarshal(value, node)
-	if err == nil {
-		node.Connect()
-		members[node.Id] = node
+	if err != nil {
+		log.WithFields(log.Fields{
+			"key": string(key),
+			"err": err.Error(),
+		}).Error("Failed to add node")
+		return nil
 	}
+	node.Connect()
+	members[node.Id] = node    //添加到成员列表中
+	team := GetTeam(node.Team) //获得团队
+	team.AddMember(node)       //添加到团队中
 	return node
 }
 
-func NodeId(key []byte) string {
-	return string(key)[len(GetMemberPath())+1:]
+func removeNode(key []byte) int {
+	id := NodeId(key)
+	value, found := members[id]
+	if found {
+		team := GetTeam(value.Team) //获得团队
+		team.RemoveMember(id)       //从团队中移除
+		delete(members, id)         //从成员列表中移除
+		return 1
+	}
+	return 0
 }
 
-func DataSync(node Node, tableName string) error {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Address, node.Port), grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(3*time.Second))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewClusterClient(conn)
-	request := &pb.RpcRequest{
-		Params: map[string]string{},
-	}
-	request.Params["name"] = tableName
-	stream, err := c.DataSync(context.Background(), request)
-	if err != nil {
-		return err
-	}
-	tbl := server.GetDatabase("").GetTable(tableName)
-	size := len(tbl.Columns)
-	for {
-		res, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
+func DataSync() error {
+	log.Info(color.New(color.FgGreen).SprintFunc()("Start data synchronization >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"))
+	team := GetTeam(node.Team)
+	if !team.IsLeader(node) {
+		leader := team.GetLeader()
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", leader.Address, leader.Port), grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(3*time.Second))
 		if err != nil {
+			log.WithFields(log.Fields{
+				"err": err.Error(),
+			}).Panic("Data synchronization error, did not connect")
 			return err
 		}
-		fields := strings.SplitN(res.Data, ",", size)
-		key, row := tbl.RowData(fields)
-		tbl.Insert(key, row)
+		defer conn.Close()
+		c := pb.NewClusterClient(conn)
+		request := &pb.RpcRequest{
+			Params: map[string]string{},
+		}
+		db := server.GetDatabase("")
+		for name, _ := range db.Tables {
+			request.Params["name"] = name
+			stream, err := c.DataSync(context.Background(), request)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"table": name,
+					"err":   err.Error(),
+				}).Panic("Data synchronization error")
+				return err
+			}
+			tbl := db.GetTable(name)
+			size := len(tbl.Columns)
+			for {
+				res, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					log.WithFields(log.Fields{
+						"table": name,
+						"err":   err.Error(),
+					}).Error("Data synchronization error")
+					return err
+				}
+				fields := strings.SplitN(res.Data, ",", size)
+				key, row := tbl.RowData(fields)
+				tbl.Insert(key, row)
+			}
+			log.WithFields(log.Fields{
+				"table": name,
+			}).Info("Table data synchronization succeeded")
+		}
 	}
 	return nil
+}
+
+func Broadcast(command string) {
+	entry := &pb.Entry{
+		Index:     0,
+		Data:      command,
+		Address:   node.Address,
+		Port:      node.Port,
+		Team:      conf.Team,
+		Timestamp: time.Now().Format("20060102150405.000"),
+	}
+	for _, v := range members {
+		if v.Id != node.Id && v.Team == node.Team {
+			partner := v
+			go func() {
+				for i := 0; i < 3; i++ {
+					err := partner.Log(entry)
+					if err == nil {
+						return
+					}
+				}
+			}()
+		}
+	}
 }
 
 func externalIP() (net.IP, error) {
@@ -222,28 +292,4 @@ func getIpFromAddr(addr net.Addr) net.IP {
 		return nil // not an ipv4 address
 	}
 	return ip
-}
-
-func Broadcast(command string) {
-	entry := &pb.Entry{
-		Index:     0,
-		Data:      command,
-		Address:   node.Address,
-		Port:      node.Port,
-		Team:      conf.Team,
-		Timestamp: time.Now().Format("20060102150405.000"),
-	}
-	for _, v := range members {
-		if v.Id != node.Id && v.Team == node.Team {
-			partner := v
-			go func() {
-				for i := 0; i < 3; i++ {
-					err := partner.Log(entry)
-					if err == nil {
-						return
-					}
-				}
-			}()
-		}
-	}
 }

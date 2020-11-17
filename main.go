@@ -61,6 +61,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	pb.RegisterMetaServer(s, &api.MetaServer{})
 	pb.RegisterLogServer(s, &api.LogServer{})
 	pb.RegisterMagpieServer(s, &api.MagpieServer{})
+	pb.RegisterClusterServer(s, &api.ClusterServer{})
 	log.Infof("Magpie server listening on: %d", config.GetConfig().Port)
 	if err = s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
