@@ -144,25 +144,18 @@ TABLE DESC print table details
       {
         "name": "id",
         "dataType": "string",
-        "expr": "id"
       },
       {
         "name": "name",
         "dataType": "string",
-        "index": 1,
-        "expr": "name"
       },
       {
         "name": "pwd",
         "dataType": "string",
-        "index": 2,
-        "expr": "pwd"
       },
       {
         "name": "age",
         "dataType": "int",
-        "index": 3,
-        "expr": "age"
       }
     ],
     "keys": [
