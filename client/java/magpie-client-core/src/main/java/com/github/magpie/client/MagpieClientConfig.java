@@ -4,15 +4,17 @@ import lombok.Data;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
 public class MagpieClientConfig {
-    private boolean enabled;
-    private List<InetSocketAddress> serverNodes;
-    private LoadBalancePolicy loadBalancePolicy;
+    private boolean enabled = true;
+    private List<InetSocketAddress> serverNodes = new ArrayList<>();
+    private LoadBalancePolicy loadBalancePolicy = LoadBalancePolicy.round_robin;
+    private long timeout = 5 * 60 * 1000; // 5 分钟
 
-    public Builder newBuilder() {
+    public static Builder newBuilder() {
         return new Builder();
     }
 
@@ -23,35 +25,52 @@ public class MagpieClientConfig {
     }
 
     public static class Builder {
-        private boolean enabled;
-        private List<InetSocketAddress> serverNodes = new ArrayList<>();
-        private LoadBalancePolicy loadBalancePolicy;
+
+        private MagpieClientConfig instance;
+
+        public Builder() {
+            this.instance = new MagpieClientConfig();
+        }
+
+        public Builder setTimeout(long timeout) {
+            this.instance.setTimeout(timeout);
+            return this;
+        }
 
         public Builder setEnabled(boolean enabled) {
-            this.enabled = enabled;
+            this.instance.setEnabled(enabled);
             return this;
         }
 
         public Builder setServerNodes(List<InetSocketAddress> serverNodes) {
-            this.serverNodes = serverNodes;
+            this.instance.setServerNodes(serverNodes);
+            return this;
+        }
+
+        public Builder parseServerNodesFromString(String hostAndPortsString) {
+            String[] split = hostAndPortsString.split(",");
+            Arrays.stream(split).forEach(s -> {
+                String[] hostAndPort = s.trim().split(":");
+                if (hostAndPort.length != 2) {
+                    throw new RuntimeException("Wrong inet socket address");
+                }
+                InetSocketAddress serverNode = new InetSocketAddress(hostAndPort[0], Integer.parseInt(hostAndPort[1]));
+                this.addServerNode(serverNode);
+            });
             return this;
         }
 
         public Builder addServerNode(InetSocketAddress serverNode) {
-            this.serverNodes.add(serverNode);
+            this.instance.getServerNodes().add(serverNode);
             return this;
         }
 
         public Builder setLoadBalancePolicy(LoadBalancePolicy loadBalancePolicy) {
-            this.loadBalancePolicy = loadBalancePolicy;
+            this.instance.setLoadBalancePolicy(loadBalancePolicy);
             return this;
         }
 
         public MagpieClientConfig build() {
-            MagpieClientConfig instance = new MagpieClientConfig();
-            instance.setEnabled(this.enabled);
-            instance.setLoadBalancePolicy(this.loadBalancePolicy);
-            instance.setServerNodes(this.serverNodes);
             return instance;
         }
     }

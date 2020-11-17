@@ -2,6 +2,7 @@ package com.github.magpie.client.sample;
 
 import com.github.magpie.LoadResponse;
 import com.github.magpie.StreamRequest;
+import com.github.magpie.client.Callback;
 import com.github.magpie.client.MagpieClient;
 import com.github.magpie.client.sample.service.MagpieService;
 import io.grpc.stub.StreamObserver;
@@ -28,25 +29,12 @@ public class SampleApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        StreamObserver<LoadResponse> responseObserver = new StreamObserver<LoadResponse>() {
-            @Override
-            public void onNext(LoadResponse response) {
-                System.out.println("receive: " + response);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("error: ");
-            }
-
-            @Override
-            public void onCompleted() {
-                System.out.println("completed: ");
-            }
-        };
 
         InputStream in = SampleApplication.class.getResourceAsStream("/" + TABLE_NAME);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
-        magpieClient.load(TABLE_NAME, bufferedReader, responseObserver);
+        Callback<LoadResponse> callback = new Callback<>();
+        magpieClient.load(TABLE_NAME, bufferedReader, callback);
+
+        System.out.println(callback.getResult());
     }
 }

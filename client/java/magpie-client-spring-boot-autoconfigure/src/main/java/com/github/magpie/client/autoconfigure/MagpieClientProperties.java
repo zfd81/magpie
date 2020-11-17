@@ -8,7 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MagpieClientProperties {
 
     private Boolean enabled = true;
-    private String loadBalancePolicy = "round_robin";
+    private Long timeout;
+    private String loadBalancePolicy;
     private String serverNodes;
 
 }

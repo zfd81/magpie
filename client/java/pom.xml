@@ -11,6 +11,7 @@
 
     <modules>
         <module>magpie-client-core</module>
+        <module>magpie-client-sample-app</module>
         <module>magpie-client-spring-boot-autoconfigure</module>
         <module>magpie-client-spring-boot-starter</module>
         <module>magpie-client-spring-boot-sample-app</module>
