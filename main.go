@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/zfd81/magpie/etcd"
+
 	"github.com/zfd81/magpie/server/api"
 
 	log "github.com/sirupsen/logrus"
@@ -49,9 +51,41 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 			log.Panic(err)
 		}
 	}
-	server.InitTables()                 //初始化表
-	cluster.Register(time.Now().Unix()) // 集群注册
+	err = etcd.Connect() //连接etcd服务器
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Panic("Etcd connection error")
+	}
+	err = server.InitMetadata() //初始化表
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Panic("Metadata initialization failed")
+	}
+	cluster.WatchLeader()                     //监听集群Leader节点变化
+	cluster.WatchMembers()                    //监听集群Members节点变化
+	err = cluster.Register(time.Now().Unix()) // 集群注册
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Panic("Cluster registration failed")
+	}
+	err = cluster.InitMembers() //初始化集群成员信息
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Error("Initialization member information error")
+	}
+	err = cluster.DataSync() //和同一团队的leader进行数据同步
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Panic("Data synchronization error")
+	}
 	//schedule.StartScheduler() //启动计划程序
+
+	time.Sleep(time.Duration(2) * time.Second)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

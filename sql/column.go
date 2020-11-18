@@ -9,6 +9,11 @@ import (
 	"github.com/zfd81/magpie/meta"
 )
 
+const (
+	INT_MAX = int(^uint(0) >> 1)
+	INT_MIN = ^INT_MAX
+)
+
 var ConversionFuncs = map[string]func(val interface{}) interface{}{
 	meta.DataTypeString: func(val interface{}) interface{} {
 		return cast.ToString(val)

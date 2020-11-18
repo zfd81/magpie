@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -24,7 +25,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
-	"github.com/zfd81/magpie/util/etcd"
+	"github.com/zfd81/magpie/etcd"
 )
 
 const (
@@ -34,24 +35,24 @@ const (
 )
 
 var (
-	leaseID  clientv3.LeaseID
-	node     *Node
-	leaderId string
-	members  = make(map[string]*Node)
-	teams    = make(map[string]*Team)
-	conf     = config.GetConfig()
+	mu      sync.RWMutex
+	leaseID clientv3.LeaseID
+	node    *Node
+	members = make(map[string]*Node)
+	teams   = make(map[string]*Team)
+	conf    = config.GetConfig()
 )
 
-func GetClusterPath() string {
+func ClusterPath() string {
 	return conf.Directory + ClusterDirectory
 }
 
-func GetLeaderPath() string {
-	return GetClusterPath() + LeaderDirectory
+func LeaderPath() string {
+	return ClusterPath() + LeaderDirectory
 }
 
-func GetMemberPath() string {
-	return GetClusterPath() + MemberDirectory
+func MemberPath() string {
+	return ClusterPath() + MemberDirectory
 }
 
 func GetTeam(name string) *Team {
@@ -62,6 +63,19 @@ func GetTeam(name string) *Team {
 	t := &Team{}
 	teams[name] = t
 	return t
+}
+
+func InitMembers() error {
+	//加载现有结点
+	kvs, err := etcd.GetWithPrefix(MemberPath())
+	if err != nil {
+		return err
+	}
+	for _, kv := range kvs {
+		addNode(kv.Key, kv.Value)
+	}
+	log.Info("Cluster member initialization successful.")
+	return nil
 }
 
 func Register(startUpTime int64) error {
@@ -80,71 +94,35 @@ func Register(startUpTime int64) error {
 	node.Team = conf.Team
 	node.StartUpTime = startUpTime
 
-	//获得集群领导者目录
-	lpath := GetLeaderPath()
-
-	//获得集群成员结点目录
-	mpath := GetMemberPath()
-
-	//监听集群leader结点变化
-	etcd.Watch(lpath, func(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
-		leaderId = string(value)
-	})
-
-	//监听集群结点变化
-	etcd.WatchWithPrefix(mpath, clusterWatcher)
-
-	//加载现有结点
-	kvs, err := etcd.GetWithPrefix(mpath)
-	if err == nil {
-		for _, kv := range kvs {
-			n := addNode(kv.Key, kv.Value)
-			if n.LeaderFlag {
-				leaderId = n.Id
-			}
-		}
-	}
-
-	err = DataSync() //和同一团队的leader进行数据同步
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err": err.Error(),
-		}).Panic("Data synchronization error")
-	}
-
 	//节点注册并参与选举
 	data, err := json.Marshal(node)
 	if err != nil {
 		return err
 	}
-	elect := concurrency.NewElection(session, mpath)
+
+	elect := concurrency.NewElection(session, MemberPath())
 	go func() {
 		//竞选 Leader，直到成为 Leader 函数才返回
 		if err := elect.Campaign(context.Background(), string(data)); err != nil {
-			fmt.Println(err)
+			log.WithFields(log.Fields{
+				"id":  node.Id,
+				"err": err,
+			}).Error("Campaign leader error")
 		} else {
 			node.LeaderFlag = true
-			if _, err = etcd.PutWithLease(lpath, node.Id, session.Lease()); err != nil {
+			//竞选成功后更改节点状态
+			if _, err = etcd.PutWithLease(LeaderPath(), node.Id, session.Lease()); err != nil {
 				fmt.Println(err)
 			}
 		}
 	}()
-	return err
-}
-
-func clusterWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
-	if operType == etcd.CREATE {
-		addNode(key, value)
-	} else if operType == etcd.MODIFY {
-		addNode(key, value)
-	} else if operType == etcd.DELETE {
-		removeNode(key)
-	}
+	log.Info("Cluster registration successful.")
+	return nil
 }
 
 func addNode(key []byte, value []byte) *Node {
-	node := &Node{}
-	err := json.Unmarshal(value, node)
+	n := &Node{}
+	err := json.Unmarshal(value, n)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"key": string(key),
@@ -152,34 +130,40 @@ func addNode(key []byte, value []byte) *Node {
 		}).Error("Failed to add node")
 		return nil
 	}
-	node.Connect()
-	members[node.Id] = node    //添加到成员列表中
-	team := GetTeam(node.Team) //获得团队
-	team.AddMember(node)       //添加到团队中
-	return node
+	if n.Id != node.Id {
+		n.Connect()
+	}
+	mu.Lock()
+	members[n.Id] = n       //添加到成员列表中
+	team := GetTeam(n.Team) //获得团队
+	team.AddMember(n)       //添加到团队中
+	mu.Unlock()
+	return n
 }
 
 func removeNode(key []byte) int {
 	id := NodeId(key)
 	value, found := members[id]
 	if found {
+		mu.Lock()
 		team := GetTeam(value.Team) //获得团队
 		team.RemoveMember(id)       //从团队中移除
 		delete(members, id)         //从成员列表中移除
+		mu.Unlock()
 		return 1
 	}
 	return 0
 }
 
 func DataSync() error {
-	log.Info(color.New(color.FgGreen).SprintFunc()("Start data synchronization"))
+	log.Info(color.New(color.FgGreen).SprintFunc()("Start data synchronization:"))
 	team := GetTeam(node.Team)
 	if !team.IsLeader(node) {
 		leader := team.GetLeader()
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", leader.Address, leader.Port), grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(3*time.Second))
 		if err != nil {
 			log.WithFields(log.Fields{
-				"err": err.Error(),
+				"Err": err.Error(),
 			}).Panic("Data synchronization error, did not connect")
 			return err
 		}
@@ -195,8 +179,8 @@ func DataSync() error {
 			stream, err := c.DataSync(context.Background(), request)
 			if err != nil {
 				log.WithFields(log.Fields{
-					"table": name,
-					"err":   err.Error(),
+					"Table": name,
+					"Err":   err.Error(),
 				}).Panic("Data synchronization error")
 				return err
 			}
@@ -209,8 +193,8 @@ func DataSync() error {
 				}
 				if err != nil {
 					log.WithFields(log.Fields{
-						"table": name,
-						"err":   err.Error(),
+						"Table": name,
+						"Err":   err.Error(),
 					}).Error("Data synchronization error")
 					return err
 				}
@@ -219,11 +203,12 @@ func DataSync() error {
 				tbl.Insert(key, row)
 			}
 			log.WithFields(log.Fields{
-				"table":   name,
-				"elapsed": time.Since(startTime),
-			}).Info("Table data synchronization succeeded")
+				"Table":   name,
+				"Elapsed": time.Since(startTime),
+			}).Info("- Table data synchronization succeeded")
 		}
 	}
+	log.Info("Data synchronization complete.")
 	return nil
 }
 

@@ -47,5 +47,5 @@ func NewNode(id string) *Node {
 }
 
 func NodeId(key []byte) string {
-	return string(key)[len(GetMemberPath())+1:]
+	return string(key)[len(MemberPath())+1:]
 }

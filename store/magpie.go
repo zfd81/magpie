@@ -2,7 +2,7 @@ package store
 
 import (
 	"github.com/zfd81/magpie/config"
-	"github.com/zfd81/magpie/util/etcd"
+	"github.com/zfd81/magpie/etcd"
 )
 
 var (

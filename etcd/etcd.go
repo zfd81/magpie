@@ -2,7 +2,6 @@ package etcd
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/zfd81/magpie/config"
@@ -27,15 +26,16 @@ var (
 	client *clientv3.Client
 )
 
-func init() {
+func Connect() error {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   conf.Etcd.Endpoints,
 		DialTimeout: time.Duration(conf.Etcd.DialTimeout) * time.Second,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	client = cli
+	return nil
 }
 
 func GetClient() *clientv3.Client {

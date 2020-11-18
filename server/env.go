@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/fatih/color"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/sql"
@@ -28,7 +30,8 @@ func UUID() string {
 	return uuid.New().String()
 }
 
-func InitTables() error {
+func InitMetadata() error {
+	log.Info(color.New(color.FgGreen).SprintFunc()("Start initializing metadata information:"))
 	kvs, err := store.GetWithPrefix([]byte(db.GetPath()))
 	cnt := 0
 	if err == nil {
@@ -37,13 +40,11 @@ func InitTables() error {
 			if err != nil {
 				log.Panic(err)
 			}
-			log.WithFields(log.Fields{
-				"name": tbl.Name,
-			}).Info("Table initialized successfully")
+			log.Infof("- Table %s metadata initialized successfully \n", tbl.Name)
 			cnt++
 		}
-		log.Infof("A total of %d tables were initialized \n", cnt)
 	}
+	log.Infof("Metadata initialization completed, a total of %d tables were initialized. \n", cnt)
 	return err
 }
 
