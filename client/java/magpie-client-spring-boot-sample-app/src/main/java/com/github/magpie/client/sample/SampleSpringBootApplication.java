@@ -2,32 +2,34 @@ package com.github.magpie.client.sample;
 
 import com.github.magpie.LoadResponse;
 import com.github.magpie.QueryResponse;
-import com.github.magpie.client.*;
+import com.github.magpie.client.Callback;
+import com.github.magpie.client.MagpieClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class SampleApplication {
+@SpringBootApplication
+public class SampleSpringBootApplication implements CommandLineRunner {
+
+    @Autowired
+    private MagpieClient magpieClient;
 
     public static final String TABLE_NAME = "dummy.sql";
-    private static final String SERVER_NODES = "localhost:50000,localhost:50001,localhost:50002";
     private static final String QUERY_SQL = "select dummy_name, dummy_value from dummy where dummy_name = 'name01'";
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
+        SpringApplication.run(SampleSpringBootApplication.class, args);
+    }
 
-        MagpieClientConfig magpieClientConfig = MagpieClientConfig.newBuilder()
-            .setEnabled(true)
-            .setLoadBalancePolicy(LoadBalancePolicy.round_robin)
-            .parseServerNodesFromString(SERVER_NODES)
-            .setTimeout(5 * 60 * 1000)
-            .build();
+    @Override
+    public void run(String... args) throws Exception {
 
-        MagpieClient magpieClient = new MagpieClient(magpieClientConfig);
-
-        // 加载数据
-        InputStream in = SampleApplication.class.getResourceAsStream("/" + TABLE_NAME);
+        InputStream in = SampleSpringBootApplication.class.getResourceAsStream("/" + TABLE_NAME);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
         Callback<LoadResponse> loadCallback = new Callback<>();
         magpieClient.load(TABLE_NAME, bufferedReader, loadCallback);

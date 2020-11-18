@@ -16,6 +16,7 @@ Magpie 客户端,支持 load balance 。
 # Maven 工程集成示例
 1. 运行 magpie-client-sample-app 应用里的 Server 。
 2. 运行 magpie-client-sample-app 应用里的 SampleApplication 。
+3. 在 SampleApplication 的控制台查看输出结果。
 
 # Spring Boot 集成步骤
 
@@ -43,5 +44,5 @@ magpie.client.server-nodes=localhost:50000,localhost:50001,localhost:50002
 # Spring Boot 集成示例
 
 1. 运行 magpie-client-spring-boot-sample-app 应用里的 Server 。
-2. 运行 magpie-client-spring-boot-sample-app 应用里的 SampleApplication 。
-3. 在 SampleApplication 的控制台查看输出结果。
+2. 运行 magpie-client-spring-boot-sample-app 应用里的 SampleSpringBootApplication 。
+3. 在 SampleSpringBootApplication 的控制台查看输出结果。

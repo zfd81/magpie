@@ -6,7 +6,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.NameResolver;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.BeanUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -106,6 +105,15 @@ public class MagpieClient {
 
     /**
      * 同步执行 sql
+     * @param sql 待执行的 sql
+     * @return 响应信息
+     */
+    public QueryResponse execute(String sql) {
+        return execute(QueryType.SELECT, sql);
+    }
+
+    /**
+     * 同步执行 sql
      * @param queryType 类型
      * @param sql 待执行的 sql
      * @return 响应信息
@@ -116,6 +124,15 @@ public class MagpieClient {
             .setSql(sql)
             .build();
         return blockingStub.execute(request);
+    }
+
+    /**
+     * 异步执行 sql
+     * @param sql 待执行的 sql
+     * @param callback 接收相应的回调
+     */
+    public void executeAsync(String sql, final Callback<QueryResponse> callback) {
+        executeAsync(QueryType.SELECT, sql, callback);
     }
 
     /**
