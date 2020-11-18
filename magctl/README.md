@@ -181,3 +181,26 @@ TABLE LIST prints all tables.
 |  1 |                       userInfo |
 +----+--------------------------------+
 ```
+
+## Cluster maintenance commands
+
+### MEMBER \<subcommand\>
+
+MEMBER provides commands for managing magpie cluster membership.
+
+### MEMBER LIST
+
+MEMBER LIST prints the member details for all members associated with an magpie cluster.
+
+#### Examples
+
+```bash
+./magctl member list
++----------------------+------------------+------------+-----------+---------------------+
+|       ENDPOINT       |        ID        |    Team    | IS LEADER |    START-UP TIME    |
++----------------------+------------------+------------+-----------+---------------------+
+|  192.168.31.158:8143 | 694d75db569fec75 |     magpie |      true | 2020-11-18 21:26:47 |
+|  192.168.31.158:8888 | 694d75db569fec7e |     magpie |     false | 2020-11-18 21:27:33 |
+|  192.168.31.158:7890 | 694d75db569fec85 |     magpie |     false | 2020-11-18 21:28:20 |
++----------------------+------------------+------------+-----------+---------------------+
+```
