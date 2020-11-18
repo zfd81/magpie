@@ -39,6 +39,7 @@ func init() {
 		NewStoreCommand(),
 		NewLoadCommand(),
 		NewExecuteCommand(),
+		NewMemberCommand(),
 	)
 }
 

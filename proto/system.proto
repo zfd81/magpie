@@ -48,6 +48,6 @@ service Log {
 
 //定义集群服务
 service Cluster{
-  // 服务端流式响应
-  rpc dataSync (RpcRequest) returns (stream StreamResponse){}
+  rpc DataSync (RpcRequest) returns (stream StreamResponse){} // 服务端流式响应
+  rpc ListMembers (RpcRequest) returns (RpcResponse){} // 列出集群所有成员信息
 }

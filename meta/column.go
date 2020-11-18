@@ -14,6 +14,6 @@ type ColumnInfo struct {
 	DataType     string      `json:"dataType,omitempty"`
 	Length       int         `json:"length,omitempty"`
 	DefaultValue interface{} `json:"defaultValue,omitempty"`
-	Index        int         `json:"index,omitempty"`
+	Index        int         `json:"-"`
 	Expression   string      `json:"expr,omitempty"`
 }

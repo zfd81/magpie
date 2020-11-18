@@ -16,7 +16,7 @@ type Node struct {
 	Port        int64  `json:"port"`
 	Team        string `json:"team"`
 	StartUpTime int64  `json:"start-up-time"`
-	LeaderFlag  bool   `json:"-"`
+	LeaderFlag  bool   `json:"leader-flag,omitempty"`
 	logClient   pb.LogClient
 }
 

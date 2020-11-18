@@ -33,3 +33,7 @@ func GetConnection() *grpc.ClientConn {
 func GetTableClient() pb.MetaClient {
 	return pb.NewMetaClient(GetConnection())
 }
+
+func GetClusterClient() pb.ClusterClient {
+	return pb.NewClusterClient(GetConnection())
+}
