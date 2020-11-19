@@ -1,9 +1,7 @@
 package com.github.magpie.client.sample.service;
 
 import com.github.magpie.*;
-import com.github.magpie.client.sample.server.MagpieServerException;
 import io.grpc.stub.StreamObserver;
-import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

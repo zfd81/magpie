@@ -19,8 +19,9 @@ public class SampleSpringBootApplication implements CommandLineRunner {
     @Autowired
     private MagpieClient magpieClient;
 
-    public static final String TABLE_NAME = "dummy.sql";
-    private static final String QUERY_SQL = "select dummy_name, dummy_value from dummy where dummy_name = 'name01'";
+    public static final String TABLE_NAME = "userInfo";
+    public static final String DATA_FILE = "/userInfo.csv";
+    private static final String QUERY_SQL = "select id,name,pwd,age from userInfo where id = '1'";
 
     public static void main(String[] args) {
         SpringApplication.run(SampleSpringBootApplication.class, args);
@@ -29,10 +30,10 @@ public class SampleSpringBootApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        InputStream in = SampleSpringBootApplication.class.getResourceAsStream("/" + TABLE_NAME);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
+        // 加载数据
+        InputStream in = SampleSpringBootApplication.class.getResourceAsStream(DATA_FILE);
         Callback<LoadResponse> loadCallback = new Callback<>();
-        magpieClient.load(TABLE_NAME, bufferedReader, loadCallback);
+        magpieClient.load(TABLE_NAME, in, loadCallback);
         System.out.println("加载数据结果: ");
         System.out.println(loadCallback.getResult());
 
