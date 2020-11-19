@@ -74,3 +74,25 @@ func (c *ClusterServer) ListMembers(ctx context.Context, request *pb.RpcRequest)
 		Data: string(bytes),
 	}, nil
 }
+
+func (c *ClusterServer) MemberStatus(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	tbls := server.GetDatabase("").Tables
+	tblInfos := []map[string]interface{}{}
+	for _, tbl := range tbls {
+		info := map[string]interface{}{}
+		info["name"] = tbl.Name
+		cc, rc, size := tbl.Status()
+		info["colCount"] = cc
+		info["rowCount"] = rc
+		info["tblSize"] = size
+		tblInfos = append(tblInfos, info)
+	}
+	bytes, err := json.Marshal(tblInfos)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
+	}, nil
+}

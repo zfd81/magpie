@@ -103,3 +103,24 @@ func New() *Cache {
 	}
 	return c
 }
+
+func Size(data interface{}) int {
+	switch data.(type) {
+	case string:
+		return len(data.(string))
+	case int64:
+		return 8
+	case int32:
+		return 4
+	case int16:
+		return 2
+	case float64:
+		return 8
+	case float32:
+		return 4
+	case bool:
+		return 1
+	default:
+		return 1
+	}
+}

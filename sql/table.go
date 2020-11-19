@@ -18,6 +18,7 @@ type Table struct {
 	primaryKeys   []*Column          //主键列
 	columnMapping map[string]*Column //列映射
 	cache         *memory.Cache
+	rowSize       func([]interface{}) int //行内存大小计算函数
 }
 
 func (t *Table) init() {
@@ -35,6 +36,29 @@ func (t *Table) init() {
 	//	t.columnMapping[v.Name] = NewDerivedColumn(*v)
 	//}
 	t.cache = memory.New()
+
+	//构建行大小计算函数
+	size := 0
+	var strIndexes []int
+	for _, col := range t.Columns {
+		switch strings.ToUpper(col.DataType) {
+		case meta.DataTypeString:
+			strIndexes = append(strIndexes, col.Index)
+		case meta.DataTypeInteger:
+			size = size + 8
+		case meta.DataTypeBool:
+			size = size + 1
+		case meta.DataTypeFloat:
+			size = size + 8
+		}
+	}
+	t.rowSize = func(row []interface{}) int {
+		rsize := size
+		for _, v := range strIndexes {
+			rsize += memory.Size(row[v])
+		}
+		return rsize
+	}
 }
 
 func (t *Table) GetColumn(name string) *Column {
@@ -147,4 +171,14 @@ func (t *Table) FindAll(f func(k string, v interface{})) (int, error) {
 
 func (t *Table) Truncate() {
 	t.cache.Clear()
+}
+
+func (t *Table) Status() (int, int, int) {
+	colCount := len(t.Columns)
+	size := 0
+	rowCount := t.cache.GetAll(func(k string, v interface{}) {
+		row := cast.ToSlice(v)
+		size = size + memory.Size(k) + t.rowSize(row)
+	})
+	return colCount, rowCount, size / 1024
 }

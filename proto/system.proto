@@ -50,4 +50,5 @@ service Log {
 service Cluster{
   rpc DataSync (RpcRequest) returns (stream StreamResponse){} // 服务端流式响应
   rpc ListMembers (RpcRequest) returns (RpcResponse){} // 列出集群所有成员信息
+  rpc MemberStatus (RpcRequest) returns (RpcResponse){} // 查看集群成员状态信息
 }

@@ -204,3 +204,19 @@ MEMBER LIST prints the member details for all members associated with an magpie 
 |  192.168.31.158:7890 | 694d75db569fec85 |     magpie |     false | 2020-11-18 21:28:20 |
 +----------------------+------------------+------------+-----------+---------------------+
 ```
+
+### MEMBER STAT
+
+MEMBER STAT prints the member status information.
+
+#### Examples
+
+```bash
+./magctl member stat
++--------------------+--------------+-----------+-----------+
+|     TABLE NAME     | COLUMN COUNT | ROW COUNT |  SIZE(KB) |
++--------------------+--------------+-----------+-----------+
+|          tagDbInfo |         3000 |         0 |         0 |
+|           userInfo |            4 |      9977 |       297 |
++--------------------+--------------+-----------+-----------+
+```
