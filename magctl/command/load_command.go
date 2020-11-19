@@ -49,12 +49,15 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 	scanner := bufio.NewScanner(file)
 	err = stream.Send(&pb.StreamRequest{Data: name})
 	if err != nil {
-		Errorf(err.Error())
+		resp, err := stream.CloseAndRecv()
+		if err != nil {
+			Errorf(err.Error())
+			return
+		}
+		Errorf(resp.Message)
 		return
 	}
-	cnt := 0
 	for scanner.Scan() {
-		cnt++
 		err = stream.Send(&pb.StreamRequest{Data: scanner.Text()})
 		if err != nil {
 			resp, err := stream.CloseAndRecv()
