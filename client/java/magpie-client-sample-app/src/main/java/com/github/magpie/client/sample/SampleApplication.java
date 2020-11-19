@@ -2,18 +2,20 @@ package com.github.magpie.client.sample;
 
 import com.github.magpie.LoadResponse;
 import com.github.magpie.QueryResponse;
-import com.github.magpie.client.*;
+import com.github.magpie.client.Callback;
+import com.github.magpie.client.LoadBalancePolicy;
+import com.github.magpie.client.MagpieClient;
+import com.github.magpie.client.MagpieClientConfig;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 
 public class SampleApplication {
 
-    public static final String TABLE_NAME = "dummy.sql";
-    private static final String SERVER_NODES = "localhost:50000,localhost:50001,localhost:50002";
-    private static final String QUERY_SQL = "select dummy_name, dummy_value from dummy where dummy_name = 'name01'";
+    public static final String TABLE_NAME = "userInfo";
+    public static final String DATA_FILE = "/userInfo.csv";
+    private static final String SERVER_NODES = "127.0.0.1:8143";
+    private static final String QUERY_SQL = "select id,name,pwd,age from userInfo where id = '1'";
 
     public static void main(String[] args) throws IOException {
 
@@ -27,10 +29,9 @@ public class SampleApplication {
         MagpieClient magpieClient = new MagpieClient(magpieClientConfig);
 
         // 加载数据
-        InputStream in = SampleApplication.class.getResourceAsStream("/" + TABLE_NAME);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
+        InputStream in = SampleApplication.class.getResourceAsStream(DATA_FILE);
         Callback<LoadResponse> loadCallback = new Callback<>();
-        magpieClient.load(TABLE_NAME, bufferedReader, loadCallback);
+        magpieClient.load(TABLE_NAME, in, loadCallback);
         System.out.println("加载数据结果: ");
         System.out.println(loadCallback.getResult());
 

@@ -7,8 +7,7 @@ import io.grpc.NameResolver;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +44,29 @@ public class MagpieClient {
         this.blockingStub = MagpieGrpc.newBlockingStub(channel);
         this.asyncStub = MagpieGrpc.newStub(channel);
 
-        log.info("rpc stub initialized successfully.");
+        log.info("Rpc stub 初始化完成");
+    }
+
+    /**
+     * 异步加载表数据
+     * @param tableName 表名
+     * @param file 用于读取表数据信息的 File
+     * @param callback 接收响应的回调
+     * @throws IOException
+     */
+    public void load(String tableName, File file, final Callback<LoadResponse> callback) throws IOException {
+        load(tableName, new FileInputStream(file), callback);
+    }
+
+    /**
+     * 异步加载表数据
+     * @param tableName 表名
+     * @param in 用于读取表数据信息的 InputStream
+     * @param callback 接收响应的回调
+     * @throws IOException
+     */
+    public void load(String tableName, InputStream in, final Callback<LoadResponse> callback) throws IOException {
+        load(tableName, new BufferedReader(new InputStreamReader(in)), callback);
     }
 
     /**

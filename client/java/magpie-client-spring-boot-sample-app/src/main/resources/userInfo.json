@@ -1,0 +1,22 @@
+{
+  "name": "userInfo",
+  "cols": [
+    {
+      "name": "id",
+      "dataType": "string"
+    },
+    {
+      "name": "name",
+      "dataType": "string"
+    },
+    {
+      "name": "pwd",
+      "dataType": "string"
+    },
+    {
+      "name": "age",
+      "dataType": "int"
+    }
+  ],
+  "keys": ["id"]
+}
