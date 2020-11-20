@@ -10,7 +10,7 @@ message RpcRequest {
   string data = 2;
 }
 
-message Entry {
+message Entry{
   uint64 index = 1;
   string data = 2;
   string team = 3;
@@ -25,8 +25,8 @@ message RpcResponse {
   string data = 3;
 }
 
-// stream响应结构
-message StreamResponse {
+//stream响应结构
+message StreamResponse{
   string data = 1;
 }
 
@@ -50,7 +50,8 @@ service Log {
 }
 
 //定义集群服务
-service Cluster {
-  rpc DataSync (RpcRequest) returns (stream StreamResponse) {} // 服务端流式响应
-  rpc ListMembers (RpcRequest) returns (RpcResponse) {} // 列出集群所有成员信息
+service Cluster{
+  rpc DataSync (RpcRequest) returns (stream StreamResponse){} // 服务端流式响应
+  rpc ListMembers (RpcRequest) returns (RpcResponse){} // 列出集群所有成员信息
+  rpc MemberStatus (RpcRequest) returns (RpcResponse){} // 查看集群成员状态信息
 }
