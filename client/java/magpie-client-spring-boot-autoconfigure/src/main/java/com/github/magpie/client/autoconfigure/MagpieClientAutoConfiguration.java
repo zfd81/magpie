@@ -3,6 +3,7 @@ package com.github.magpie.client.autoconfigure;
 import com.github.magpie.client.LoadBalancePolicy;
 import com.github.magpie.client.MagpieClient;
 import com.github.magpie.client.MagpieClientConfig;
+import com.github.magpie.client.MagpieRpcException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -43,7 +44,7 @@ public class MagpieClientAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public MagpieClient magpieClient(MagpieClientConfig magpieClientConfig) {
+    public MagpieClient magpieClient(MagpieClientConfig magpieClientConfig) throws MagpieRpcException {
         return new MagpieClient(magpieClientConfig);
     }
 
