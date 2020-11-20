@@ -1,5 +1,7 @@
 package com.github.magpie.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.magpie.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -8,6 +10,10 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -20,7 +26,7 @@ public class MagpieClient {
     private MagpieGrpc.MagpieBlockingStub blockingStub;
     private MagpieGrpc.MagpieStub asyncStub;
 
-    public MagpieClient(MagpieClientConfig magpieClientConfig) {
+    public MagpieClient(MagpieClientConfig magpieClientConfig) throws MagpieRpcException {
         this.magpieClientConfig = magpieClientConfig;
         this.isAvailable = this.magpieClientConfig.isEnabled();
         if (this.isAvailable) {
@@ -28,13 +34,16 @@ public class MagpieClient {
         }
     }
 
-    private void initStub() {
+    /**
+     * 初始化 stub
+     */
+    private void initStub() throws MagpieRpcException {
 
         log.info("Initializing grpc stub...");
-        log.info("config: {}", magpieClientConfig);
+        log.info("magpieClientConfig: {}", magpieClientConfig);
 
-        NameResolver.Factory nameResolverFactory = new MultiAddressNameResolverFactory(magpieClientConfig.getServerNodes());
-
+        List<InetSocketAddress> realServerNodes = listMembers();
+        NameResolver.Factory nameResolverFactory = new MultiAddressNameResolverFactory(realServerNodes);
         ManagedChannel channel = ManagedChannelBuilder.forTarget("service")
             .nameResolverFactory(nameResolverFactory)
             .defaultLoadBalancingPolicy(magpieClientConfig.getLoadBalancePolicy().name())
@@ -45,6 +54,43 @@ public class MagpieClient {
         this.asyncStub = MagpieGrpc.newStub(channel);
 
         log.info("Rpc stub 初始化完成");
+    }
+
+    /**
+     * 获得可用的服务端地址列表
+     * @return 服务端地址列表
+     */
+    public List<InetSocketAddress> listMembers() throws MagpieRpcException {
+
+        List<InetSocketAddress> result = new ArrayList<>();
+        NameResolver.Factory nameResolverFactory = new MultiAddressNameResolverFactory(magpieClientConfig.getServerNodes());
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("service")
+            .nameResolverFactory(nameResolverFactory)
+            .defaultLoadBalancingPolicy(magpieClientConfig.getLoadBalancePolicy().name())
+            .usePlaintext()
+            .build();
+
+        ClusterGrpc.ClusterBlockingStub clusterBlockingStub= ClusterGrpc.newBlockingStub(channel);
+        RpcRequest request = RpcRequest.newBuilder().build();
+        RpcResponse response = clusterBlockingStub.listMembers(request);
+        channel.shutdown();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            List dataList = objectMapper.readValue(response.getData(), List.class);
+            dataList.forEach(o -> {
+                Map member = (Map<String, Object>) o;
+                String addr = (String) member.get("addr");
+                int port = (int) member.get("port");
+                result.add(new InetSocketAddress(addr, port));
+            });
+        } catch (Exception e) {
+            log.error("Error listMembers", e);
+            throw new MagpieRpcException(e);
+        }
+
+        log.info("Available Magpie nodes: {}", result);
+        return result;
     }
 
     /**

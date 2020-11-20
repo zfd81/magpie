@@ -2,10 +2,7 @@ package com.github.magpie.client.sample;
 
 import com.github.magpie.LoadResponse;
 import com.github.magpie.QueryResponse;
-import com.github.magpie.client.Callback;
-import com.github.magpie.client.LoadBalancePolicy;
-import com.github.magpie.client.MagpieClient;
-import com.github.magpie.client.MagpieClientConfig;
+import com.github.magpie.client.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +14,7 @@ public class SampleApplication {
     private static final String SERVER_NODES = "127.0.0.1:8143";
     private static final String QUERY_SQL = "select id,name,pwd,age from userInfo where id = '1'";
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, MagpieRpcException {
 
         MagpieClientConfig magpieClientConfig = MagpieClientConfig.newBuilder()
             .setEnabled(true)
