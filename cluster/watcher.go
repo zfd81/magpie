@@ -8,7 +8,11 @@ import (
 //监听集群Leader节点变化
 func WatchLeader() {
 	etcd.Watch(LeaderPath(), func(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
-		log.Info("Team leader election completed")
+		if operType == etcd.CREATE || operType == etcd.MODIFY {
+			log.WithFields(log.Fields{
+				"id": string(value),
+			}).Info("Team leader election completed")
+		}
 	})
 }
 
@@ -18,17 +22,17 @@ func WatchMembers() {
 		if operType == etcd.CREATE {
 			log.WithFields(log.Fields{
 				"id": NodeId(key),
-			}).Info("Add node")
+			}).Info("New member join")
 			addNode(key, value)
 		} else if operType == etcd.MODIFY {
 			log.WithFields(log.Fields{
 				"id": NodeId(key),
-			}).Info("Modify node")
+			}).Info("Member status change")
 			addNode(key, value)
 		} else if operType == etcd.DELETE {
 			log.WithFields(log.Fields{
 				"id": NodeId(key),
-			}).Info("Delete node")
+			}).Info("Member exit")
 			removeNode(key)
 		}
 	})

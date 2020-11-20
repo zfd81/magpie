@@ -27,10 +27,22 @@ var (
 )
 
 func Connect() error {
-	cli, err := clientv3.New(clientv3.Config{
+	clientConfig := clientv3.Config{
 		Endpoints:   conf.Etcd.Endpoints,
 		DialTimeout: time.Duration(conf.Etcd.DialTimeout) * time.Second,
-	})
+	}
+	cli, err := clientv3.New(clientConfig)
+	if err != nil {
+		return err
+	}
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	for _, v := range clientConfig.Endpoints {
+		_, err = cli.Status(timeoutCtx, v)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return err
 	}
