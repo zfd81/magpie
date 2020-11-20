@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/fatih/color"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/sql"
@@ -31,7 +29,7 @@ func UUID() string {
 }
 
 func InitMetadata() error {
-	log.Info(color.New(color.FgGreen).SprintFunc()("Start initializing metadata information:"))
+	log.Info("Start initializing metadata information:")
 	kvs, err := store.GetWithPrefix([]byte(db.GetPath()))
 	cnt := 0
 	if err == nil {

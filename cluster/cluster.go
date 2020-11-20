@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/server"
@@ -156,7 +154,7 @@ func removeNode(key []byte) int {
 }
 
 func DataSync() error {
-	log.Info(color.New(color.FgGreen).SprintFunc()("Start data synchronization:"))
+	log.Info("Start data synchronization:")
 	team := GetTeam(node.Team)
 	if !team.IsLeader(node) {
 		leader := team.GetLeader()
