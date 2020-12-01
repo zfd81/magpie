@@ -1,6 +1,5 @@
 package com.github.magpie.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.magpie.*;
 import io.grpc.ManagedChannel;
@@ -12,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -23,8 +23,17 @@ public class MagpieClient {
     private final MagpieClientConfig magpieClientConfig;
     private boolean isAvailable;
 
-    private MagpieGrpc.MagpieBlockingStub blockingStub;
-    private MagpieGrpc.MagpieStub asyncStub;
+    private MagpieGrpc.MagpieBlockingStub magpieBlockingStub;
+    private MagpieGrpc.MagpieStub magpieStub;
+    private StorageGrpc.StorageBlockingStub storageBlockingStub;
+    private MetaGrpc.MetaBlockingStub metaBlockingStub;
+    private LogGrpc.LogBlockingStub logBlockingStub;
+    private ClusterGrpc.ClusterBlockingStub clusterBlockingStub;
+
+    private Storage storage;
+    private Meta meta;
+    private Log logNameSpace;
+    private Cluster cluster;
 
     public MagpieClient(MagpieClientConfig magpieClientConfig) throws MagpieRpcException {
         this.magpieClientConfig = magpieClientConfig;
@@ -32,6 +41,11 @@ public class MagpieClient {
         if (this.isAvailable) {
             this.initStub();
         }
+
+        this.storage = new Storage();
+        this.meta = new Meta();
+        this.logNameSpace = new Log();
+        this.cluster = new Cluster();
     }
 
     /**
@@ -42,25 +56,45 @@ public class MagpieClient {
         log.info("Initializing grpc stub...");
         log.info("magpieClientConfig: {}", magpieClientConfig);
 
-        List<InetSocketAddress> realServerNodes = listMembers();
-        NameResolver.Factory nameResolverFactory = new MultiAddressNameResolverFactory(realServerNodes);
+        List<InetSocketAddress> availableServerNodes = getAvailableServerNodes();
+        NameResolver.Factory nameResolverFactory = new MultiAddressNameResolverFactory(availableServerNodes);
         ManagedChannel channel = ManagedChannelBuilder.forTarget("service")
             .nameResolverFactory(nameResolverFactory)
             .defaultLoadBalancingPolicy(magpieClientConfig.getLoadBalancePolicy().name())
             .usePlaintext()
             .build();
 
-        this.blockingStub = MagpieGrpc.newBlockingStub(channel);
-        this.asyncStub = MagpieGrpc.newStub(channel);
+        this.magpieBlockingStub = MagpieGrpc.newBlockingStub(channel);
+        this.magpieStub = MagpieGrpc.newStub(channel);
+        this.storageBlockingStub = StorageGrpc.newBlockingStub(channel);
+        this.metaBlockingStub = MetaGrpc.newBlockingStub(channel);
+        this.logBlockingStub = LogGrpc.newBlockingStub(channel);
+        this.clusterBlockingStub = ClusterGrpc.newBlockingStub(channel);
 
         log.info("Rpc stub 初始化完成");
+    }
+
+    public Storage getStorage() {
+        return this.storage;
+    }
+
+    public Meta getMeta() {
+        return this.meta;
+    }
+
+    public Log getLog() {
+        return this.logNameSpace;
+    }
+
+    public Cluster getCluster() {
+        return this.cluster;
     }
 
     /**
      * 获得可用的服务端地址列表
      * @return 服务端地址列表
      */
-    public List<InetSocketAddress> listMembers() throws MagpieRpcException {
+    private List<InetSocketAddress> getAvailableServerNodes() throws MagpieRpcException {
 
         List<InetSocketAddress> result = new ArrayList<>();
         NameResolver.Factory nameResolverFactory = new MultiAddressNameResolverFactory(magpieClientConfig.getServerNodes());
@@ -70,9 +104,9 @@ public class MagpieClient {
             .usePlaintext()
             .build();
 
-        ClusterGrpc.ClusterBlockingStub clusterBlockingStub= ClusterGrpc.newBlockingStub(channel);
+        ClusterGrpc.ClusterBlockingStub tempClusterBlockingStub= ClusterGrpc.newBlockingStub(channel);
         RpcRequest request = RpcRequest.newBuilder().build();
-        RpcResponse response = clusterBlockingStub.listMembers(request);
+        RpcResponse response = tempClusterBlockingStub.listMembers(request);
         channel.shutdown();
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -94,7 +128,7 @@ public class MagpieClient {
     }
 
     /**
-     * 异步加载表数据
+     * Magpie - 异步加载表数据
      * @param tableName 表名
      * @param file 用于读取表数据信息的 File
      * @param callback 接收响应的回调
@@ -105,7 +139,7 @@ public class MagpieClient {
     }
 
     /**
-     * 异步加载表数据
+     * Magpie - 异步加载表数据
      * @param tableName 表名
      * @param in 用于读取表数据信息的 InputStream
      * @param callback 接收响应的回调
@@ -116,7 +150,7 @@ public class MagpieClient {
     }
 
     /**
-     * 异步加载表数据
+     * Magpie - 异步加载表数据
      * @param tableName 表名
      * @param bufferedReader 用于读取表数据信息的 bufferedReader
      * @param callback 接收响应的回调
@@ -146,7 +180,7 @@ public class MagpieClient {
             }
         };
 
-        StreamObserver<StreamRequest> requestObserver = asyncStub.load(responseObserver);
+        StreamObserver<StreamRequest> requestObserver = magpieStub.load(responseObserver);
 
         requestObserver.onNext(StreamRequest.newBuilder().setData(tableName).build());
         String line;
@@ -171,16 +205,18 @@ public class MagpieClient {
     }
 
     /**
-     * 同步执行 sql
+     * Magpie - 同步执行 sql
      * @param sql 待执行的 sql
      * @return 响应信息
      */
     public QueryResponse execute(String sql) {
-        return execute(QueryType.SELECT, sql);
+        QueryResponse response = execute(QueryType.SELECT, sql);
+        log.info("响应: {}", response);
+        return response;
     }
 
     /**
-     * 同步执行 sql
+     * Magpie - 同步执行 sql
      * @param queryType 类型
      * @param sql 待执行的 sql
      * @return 响应信息
@@ -190,63 +226,184 @@ public class MagpieClient {
             .setQueryType(queryType)
             .setSql(sql)
             .build();
-        return blockingStub.execute(request);
+        return magpieBlockingStub.execute(request);
     }
 
-    /**
-     * 异步执行 sql
-     * @param sql 待执行的 sql
-     * @param callback 接收相应的回调
-     */
-    public void executeAsync(String sql, final Callback<QueryResponse> callback) {
-        executeAsync(QueryType.SELECT, sql, callback);
-    }
+    public class Storage {
+        /**
+         * Storage - 查看键值对数量
+         * @param params 参数
+         * @param data 数据
+         * @return 响应信息
+         */
+        public RpcResponse count(Map<String, String> params, String data) {
+            RpcRequest request = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            RpcResponse response = storageBlockingStub.count(request);
+            log.info("响应: {}", response);
+            return response;
+        }
 
-    /**
-     * 异步执行 sql
-     * @param queryType 类型
-     * @param sql 待执行的 sql
-     * @param callback 接收相应的回调
-     */
-    public void executeAsync(QueryType queryType, String sql, final Callback<QueryResponse> callback) {
-
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-
-        StreamObserver<QueryResponse> responseObserver = new StreamObserver<QueryResponse>() {
-            @Override
-            public void onNext(QueryResponse response) {
-                log.info("响应: {}", response);
-                callback.setResult(response);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                log.error("发生异常", t);
-                countDownLatch.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                log.info("成功完成");
-                countDownLatch.countDown();
-            }
-        };
-
-        QueryRequest request = QueryRequest.newBuilder()
-            .setQueryType(queryType)
-            .setSql(sql)
-            .build();
-
-        asyncStub.execute(request, responseObserver);
-
-        try {
-            //如果在规定时间内没有请求完，则让程序停止
-            if(!countDownLatch.await(magpieClientConfig.getTimeout(), TimeUnit.MILLISECONDS)){
-                log.warn("没有在规定时间 {} ms 内完成", magpieClientConfig.getTimeout());
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        /**
+         * Storage - 根据Key或者Key前缀查看数据
+         * @param params 参数
+         * @param data 数据
+         * @return 响应信息
+         */
+        public RpcResponse get(Map<String, String> params, String data) {
+            RpcRequest request = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            RpcResponse response = storageBlockingStub.get(request);
+            log.info("响应: {}", response);
+            return response;
         }
     }
 
+    public class Meta {
+
+        /**
+         * Meta - 创建表
+         *
+         * @param params 参数
+         * @param data   数据
+         * @return 响应信息
+         */
+        public RpcResponse createTable(Map<String, String> params, String data) {
+            RpcRequest request = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            RpcResponse response = metaBlockingStub.createTable(request);
+            log.info("响应: {}", response);
+            return response;
+        }
+
+        /**
+         * Meta - 删除表
+         *
+         * @param params 参数
+         * @param data   数据
+         * @return 响应信息
+         */
+        public RpcResponse deleteTable(Map<String, String> params, String data) {
+            RpcRequest request = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            RpcResponse response = metaBlockingStub.deleteTable(request);
+            log.info("响应: {}", response);
+            return response;
+        }
+
+        /**
+         * Meta - 查看表结构信息
+         *
+         * @param params 参数
+         * @param data   数据
+         * @return 响应信息
+         */
+        public RpcResponse describeTable(Map<String, String> params, String data) {
+            RpcRequest request = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            RpcResponse response = metaBlockingStub.describeTable(request);
+            log.info("响应: {}", response);
+            return response;
+        }
+
+        /**
+         * Meta - 列出所有表格
+         *
+         * @param params 参数
+         * @param data   数据
+         * @return 响应信息
+         */
+        public RpcResponse listTables(Map<String, String> params, String data) {
+            RpcRequest request = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            RpcResponse response = metaBlockingStub.listTables(request);
+            log.info("响应: {}", response);
+            return response;
+        }
+    }
+
+    public class Log {
+
+        /**
+         * Log - 请求日志
+         *
+         * @param index     索引
+         * @param data      数据
+         * @param team      组
+         * @param address   地址
+         * @param port      端口
+         * @param timestamp 时间戳
+         * @return 响应信息
+         */
+        public RpcResponse apply(long index, String data, String team, String address, long port, String timestamp) {
+            Entry entry = Entry.newBuilder()
+                .setIndex(index)
+                .setData(data)
+                .setTeam(team)
+                .setAddress(address)
+                .setPort(port)
+                .setTimestamp(timestamp)
+                .build();
+            RpcResponse response = logBlockingStub.apply(entry);
+            log.info("响应: {}", response);
+            return response;
+        }
+    }
+
+    public class Cluster {
+
+        /**
+         * Cluster - 服务端流式响应
+         *
+         * @param params 参数
+         * @param data   数据
+         * @return 响应信息迭代器
+         * @throws IOException
+         */
+        public Iterator<StreamResponse> dataSync(Map<String, String> params, String data) {
+            RpcRequest rpcRequest = RpcRequest.newBuilder()
+                .putAllParams(params)
+                .setData(data)
+                .build();
+            Iterator<StreamResponse> response = clusterBlockingStub.dataSync(rpcRequest);
+            log.info("响应: {}", response);
+            return response;
+        }
+
+        /**
+         * Cluster - 列出集群所有成员信息
+         *
+         * @return 响应信息
+         */
+        public RpcResponse listMembers() {
+            RpcRequest request = RpcRequest.newBuilder().build();
+            RpcResponse response = clusterBlockingStub.listMembers(request);
+            log.info("响应: {}", response);
+            return response;
+        }
+
+        /**
+         * Cluster - 查看集群成员状态信息
+         *
+         * @return 响应信息
+         */
+        public RpcResponse memberStatus() {
+            RpcRequest request = RpcRequest.newBuilder().build();
+            RpcResponse response = clusterBlockingStub.memberStatus(request);
+            log.info("响应: {}", response);
+            return response;
+        }
+    }
 }

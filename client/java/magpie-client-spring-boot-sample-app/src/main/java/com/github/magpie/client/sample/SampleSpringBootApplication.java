@@ -41,11 +41,5 @@ public class SampleSpringBootApplication implements CommandLineRunner {
         QueryResponse executeResult = magpieClient.execute(QUERY_SQL);
         System.out.println("同步查询结果: ");
         System.out.println(executeResult);
-
-        // 异步查询
-        Callback<QueryResponse> queryCallback = new Callback<>();
-        magpieClient.executeAsync(QUERY_SQL, queryCallback);
-        System.out.println("异步查询结果: ");
-        System.out.println(queryCallback.getResult());
     }
 }

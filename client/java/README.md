@@ -43,15 +43,11 @@ public class SampleApplication {
         QueryResponse executeResult = magpieClient.execute(QUERY_SQL);
         System.out.println("同步查询结果: ");
         System.out.println(executeResult);
-
-        // 异步查询
-        Callback<QueryResponse> queryCallback = new Callback<>();
-        magpieClient.executeAsync(QUERY_SQL, queryCallback);
-        System.out.println("异步查询结果: ");
-        System.out.println(queryCallback.getResult());
     }
 }
 ```
+
+更多方法参考 `magpie-client-core` 里的测试类 `com.github.magpie.client.MagpieClientTest` 。
 
 # Maven 工程集成示例
 1. 启动 etcd 服务与 magpie 服务。
