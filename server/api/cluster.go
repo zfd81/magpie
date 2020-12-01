@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/zfd81/magpie/server"
 
-	"github.com/spf13/cast"
 	pb "github.com/zfd81/magpie/proto/magpiepb"
 )
 
@@ -23,18 +21,10 @@ func (c *ClusterServer) DataSync(request *pb.RpcRequest, stream pb.Cluster_DataS
 	if tbl == nil {
 		return fmt.Errorf("table %s does not exist", name)
 	}
-	tbl.FindAll(func(k string, v interface{}) {
-		var str bytes.Buffer
-		row := cast.ToSlice(v)
-		for i, v := range row {
-			if i > 0 {
-				str.WriteString(",")
-			}
-			str.WriteString(cast.ToString(v))
-		}
-		stream.Send(&pb.StreamResponse{Data: str.String()})
+	return tbl.FindAll(func(k, v string) error {
+		stream.Send(&pb.StreamResponse{Data: v})
+		return nil
 	})
-	return nil
 }
 
 func (c *ClusterServer) ListMembers(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {

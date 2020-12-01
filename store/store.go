@@ -1,22 +1,24 @@
 package store
 
-var tableName = "_tag"
-
 // Driver is the interface that must be implemented by a KV storage.
 type Driver interface {
 	// Open returns a new Storage.
 	// The path is the string for storage specific format.
 	Open(path string) error
-	CreateTable(name string) error
 }
 
 type Storage interface {
-	Put(key, value []byte) error
-	Get(key []byte) ([]byte, error)
-	GetWithPrefix(prefix []byte) ([]*KeyValue, error)
-	Delete(key []byte) error
-	DeleteWithPrefix(prefix []byte) error
-	Count() int
+	CreateTable(name string) error
+	Put(table string, key, value []byte) error
+	BatchPut(table string, kvs []KeyValue) error
+	Get(table string, key []byte) ([]byte, error)
+	GetWithPrefix(table string, prefix []byte) ([]*KeyValue, error)
+	Delete(table string, key []byte) error
+	DeleteWithPrefix(table string, prefix []byte) error
+	Truncate(table string) error
+	Iterator(table string, f func(k, v string) error) error
+	IteratorWithPrefix(table string, prefix []byte, f func(k, v string) error) error
+	Count(table string) int
 }
 
 type KeyValue struct {
@@ -26,7 +28,20 @@ type KeyValue struct {
 
 func New(path string) (Storage, error) {
 	db := &boltdb{}
-	db.Open(path)
-	db.CreateTable(tableName)
+	err := db.Open(path)
+	if err != nil {
+		return nil, err
+	}
 	return db, nil
+}
+
+func NewStoragePool(path string) (*StoragePool, error) {
+	pool := &StoragePool{
+		pool: make([]Storage, size),
+	}
+	err := pool.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return pool, nil
 }

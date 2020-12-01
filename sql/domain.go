@@ -1,15 +1,5 @@
 package sql
 
-type Row []string
-
-func (r *Row) Append(data string) {
-	*r = append(*r, data)
-}
-
-func (r *Row) Get(index int) string {
-	return (*r)[index]
-}
-
 type Expression interface {
 	Expr() string
 	// Eval evaluates the given row and returns a result.

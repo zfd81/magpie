@@ -51,17 +51,16 @@ func Append(entry *pb.Entry) uint64 {
 		log.Error("Marshal to struct error: %v", err)
 		return 0
 	}
-	storage.Put([]byte(entry.Timestamp), bytes)
+	storage.Put(LogTableName, []byte(entry.Timestamp), bytes)
 	return 1
 }
 
 func Remove(date string) error {
-	return storage.DeleteWithPrefix([]byte(date))
+	return storage.DeleteWithPrefix(LogTableName, []byte(date))
 }
 
 func OpenLogStorage(path string) error {
-	db := store.NewBolt()
-	err := db.Open(path)
+	db, err := store.New(path)
 	if err != nil {
 		return err
 	}

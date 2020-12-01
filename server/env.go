@@ -18,14 +18,20 @@ import (
 
 var (
 	env = sql.NewInstance("magpie", "magpie")
-	db  = env.CreateDatabase(meta.DatabaseInfo{
-		Name: "taglib",
-		Text: "taglib",
-	})
+	db  *sql.Database
 )
 
 func UUID() string {
 	return uuid.New().String()
+}
+
+func InitStorage() error {
+	database, err := env.CreateDatabase(meta.DatabaseInfo{
+		Name: "data",
+		Text: "data",
+	})
+	db = database
+	return err
 }
 
 func InitMetadata() error {
@@ -58,7 +64,7 @@ func Execute(query string) (string, error) {
 		if tbl == nil {
 			return "", fmt.Errorf("table %s does not exist", tableName)
 		}
-		conditions := map[string]interface{}{}
+		conditions := map[string]string{}
 		for _, v := range stmt.Where {
 			conditions[v.Name] = string(v.Value)
 		}
@@ -81,26 +87,16 @@ func Execute(query string) (string, error) {
 		cols := stmt.Columns
 		if cols == nil {
 			for _, row := range stmt.Rows {
-				key, data := tbl.RowData(*row)
-				if err != nil {
-					return "", err
-				}
-				tbl.Insert(key, data)
-				cnt++
+				cnt = cnt + tbl.Insert(row)
 			}
 		} else {
 			for _, row := range stmt.Rows {
-				datas := tbl.NewRow()
+				newRow := tbl.NewRow()
 				for i, name := range cols {
 					col := tbl.GetColumn(name)
-					datas[col.Index] = row.Get(i)
+					newRow.Set(col.Index, row.Get(i))
 				}
-				key, data := tbl.RowData(datas)
-				if err != nil {
-					return "", err
-				}
-				tbl.Insert(key, data)
-				cnt++
+				cnt = cnt + tbl.Insert(newRow)
 			}
 
 		}
@@ -111,7 +107,7 @@ func Execute(query string) (string, error) {
 		if tbl == nil {
 			return "", fmt.Errorf("table %s does not exist", tableName)
 		}
-		conditions := map[string]interface{}{}
+		conditions := map[string]string{}
 		for _, v := range stmt.Where {
 			conditions[v.Name] = string(v.Value)
 		}
@@ -122,7 +118,7 @@ func Execute(query string) (string, error) {
 		if tbl == nil {
 			return "", fmt.Errorf("table %s does not exist", tableName)
 		}
-		conditions := map[string]interface{}{}
+		conditions := map[string]string{}
 		for _, v := range stmt.Fields {
 			conditions[v.Name] = string(v.Expr)
 		}

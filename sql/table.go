@@ -1,10 +1,9 @@
 package sql
 
 import (
-	"reflect"
 	"strings"
 
-	"github.com/zfd81/magpie/memory"
+	"github.com/zfd81/magpie/store"
 
 	expr "github.com/zfd81/magpie/sql/expression"
 
@@ -13,12 +12,57 @@ import (
 	"github.com/zfd81/magpie/meta"
 )
 
+const (
+	FieldSeparator = "|"
+)
+
+type Row struct {
+	data     []string
+	keyFunc  func(data []string) string
+	capacity int
+}
+
+func (r *Row) Append(data string) {
+	r.data = append(r.data, data)
+}
+
+func (r *Row) Set(index int, val string) {
+	r.data[index] = val
+}
+
+func (r *Row) Get(index int) string {
+	return r.data[index]
+}
+
+func (r *Row) Data() []string {
+	return r.data
+}
+
+func (r *Row) Key() string {
+	return r.keyFunc(r.data)
+}
+
+func (r *Row) String() string {
+	return strings.Join(r.data, FieldSeparator)
+}
+
+func (r *Row) KeyValue() store.KeyValue {
+	return store.KeyValue{
+		Key:   []byte(r.Key()),
+		Value: []byte(r.String()),
+	}
+}
+
+func (r *Row) Load(line, sep string) {
+	r.data = strings.SplitN(line, sep, r.capacity)
+}
+
 type Table struct {
 	meta.TableInfo
 	primaryKeys   []*Column          //主键列
 	columnMapping map[string]*Column //列映射
-	cache         *memory.Cache
-	rowSize       func([]interface{}) int //行内存大小计算函数
+	db            store.Storage
+	rowkeyFunc    func(data []string) string
 }
 
 func (t *Table) init() {
@@ -35,29 +79,17 @@ func (t *Table) init() {
 	//for _, v := range t.DerivedCols {
 	//	t.columnMapping[v.Name] = NewDerivedColumn(*v)
 	//}
-	t.cache = memory.New()
 
-	//构建行大小计算函数
-	size := 0
-	var strIndexes []int
-	for _, col := range t.Columns {
-		switch strings.ToUpper(col.DataType) {
-		case meta.DataTypeString:
-			strIndexes = append(strIndexes, col.Index)
-		case meta.DataTypeInteger:
-			size = size + 8
-		case meta.DataTypeBool:
-			size = size + 1
-		case meta.DataTypeFloat:
-			size = size + 8
-		}
+	keyIndexs := make([]int, len(t.primaryKeys))
+	for i, col := range t.primaryKeys {
+		keyIndexs[i] = col.Index
 	}
-	t.rowSize = func(row []interface{}) int {
-		rsize := size
-		for _, v := range strIndexes {
-			rsize += memory.Size(row[v])
+	t.rowkeyFunc = func(data []string) string {
+		rowkey := strings.Builder{}
+		for _, v := range keyIndexs {
+			rowkey.WriteString(data[v])
 		}
-		return rsize
+		return rowkey.String()
 	}
 }
 
@@ -65,24 +97,16 @@ func (t *Table) GetColumn(name string) *Column {
 	return t.columnMapping[name]
 }
 
-func (t *Table) NewRow() []interface{} {
-	return make([]interface{}, len(t.Columns))
+func (t *Table) NewRow() *Row {
+	row := &Row{
+		data:     make([]string, len(t.Columns)),
+		keyFunc:  t.rowkeyFunc,
+		capacity: len(t.Columns),
+	}
+	return row
 }
 
-func (t *Table) RowData(data interface{}) (string, []interface{}) {
-	value := reflect.Indirect(reflect.ValueOf(data))
-	rowkey := strings.Builder{}
-	for _, col := range t.primaryKeys {
-		rowkey.WriteString(cast.ToString(value.Index(col.Index).Interface()))
-	}
-	row := t.NewRow()
-	for _, col := range t.columnMapping {
-		row[col.Index] = col.Value(value.Index(col.Index).Interface())
-	}
-	return rowkey.String(), row
-}
-
-func (t *Table) RowKey(data map[string]interface{}) string {
+func (t *Table) RowKey(data map[string]string) string {
 	key := strings.Builder{}
 	for _, col := range t.primaryKeys {
 		val, found := data[col.Name]
@@ -95,63 +119,88 @@ func (t *Table) RowKey(data map[string]interface{}) string {
 	return key.String()
 }
 
-func (t *Table) BuildExprEnv(row []interface{}) map[string]interface{} {
+func (t *Table) BuildExprEnv(row []string) map[string]interface{} {
 	env := map[string]interface{}{}
 	for _, col := range t.Columns {
-		env[col.Name] = row[col.Index]
+		env[col.Name] = ConversionFuncs[strings.ToUpper(col.DataType)](row[col.Index])
 	}
 	return env
 }
 
-func (t *Table) Insert(key string, row []interface{}) int {
-	t.cache.Set(key, row)
-	return 1
-}
-
-func (t *Table) DeleteByPrimaryKey(data map[string]interface{}) int {
-	cnt := 0
-	key := t.RowKey(data)
-	if key != "" {
-		t.cache.Remove(key)
-		cnt++
+func (t *Table) Insert(row *Row) int {
+	rowkey := strings.Builder{}
+	for _, col := range t.primaryKeys {
+		rowkey.WriteString(row.Get(col.Index))
 	}
-	return cnt
+	err := t.db.Put(t.Name, []byte(rowkey.String()), []byte(row.String()))
+	if err == nil {
+		return 1
+	}
+	return 0
 }
 
-func (t *Table) UpdateByPrimaryKey(data map[string]interface{}) int {
-	cnt := 0
-	key := t.RowKey(data)
-	if key != "" {
-		row := t.cache.GetSlice(key)
-		if len(row) > 0 {
+func (t *Table) BatchInsert(rows []Row) int {
+	kvs := make([]store.KeyValue, len(rows))
+	for i, row := range rows {
+		kvs[i] = row.KeyValue()
+	}
+	err := t.db.BatchPut(t.Name, kvs)
+	if err == nil {
+		return len(rows)
+	}
+	return 0
+}
+
+func (t *Table) DeleteByPrimaryKey(data map[string]string) int {
+	rowkey := t.RowKey(data)
+	if rowkey != "" {
+		err := t.db.Delete(t.Name, []byte(rowkey))
+		if err == nil {
+			return 1
+		}
+	}
+	return 0
+}
+
+func (t *Table) UpdateByPrimaryKey(data map[string]string) int {
+	rowkey := t.RowKey(data)
+	if rowkey != "" {
+		bytes, err := t.db.Get(t.Name, []byte(rowkey))
+		if err == nil {
+			row := t.NewRow()
+			row.Load(string(bytes), FieldSeparator)
 			for k, v := range data {
 				col := t.columnMapping[k]
 				if col != nil {
-					row[col.Index] = col.Value(v)
+					row.Set(col.Index, v)
 				}
 			}
-			t.cache.Set(key, row)
-			cnt++
+			err := t.db.Put(t.Name, []byte(rowkey), []byte(row.String()))
+			if err == nil {
+				return 1
+			}
 		}
 	}
-	return cnt
+	return 0
 }
 
-func (t *Table) readRow(data map[string]interface{}) []interface{} {
-	key := t.RowKey(data)
-	if key == "" {
-		return nil
-	}
-	return t.cache.GetSlice(key)
-}
+//func (t *Table) readRow(data map[string]interface{}) []interface{} {
+//	key := t.RowKey(data)
+//	if key == "" {
+//		return nil
+//	}
+//	return t.cache.GetSlice(key)
+//}
 
-func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]interface{}) (map[string]interface{}, error) {
+func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]string) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
-	key := t.RowKey(conditions)
-	if key != "" {
-		row := t.cache.GetSlice(key)
-		if len(row) > 0 {
-			env := t.BuildExprEnv(row)
+	rowkey := t.RowKey(conditions)
+	if rowkey != "" {
+		bytes, err := t.db.Get(t.Name, []byte(rowkey))
+		if err == nil && bytes != nil {
+			row := t.NewRow()
+			row.Load(string(bytes), FieldSeparator)
+			env := t.BuildExprEnv(row.Data())
 			for _, column := range columns {
 				val, err := expr.Eval(column.GetExpr(), env)
 				if err != nil {
@@ -164,21 +213,17 @@ func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]interfa
 	return result, nil
 }
 
-func (t *Table) FindAll(f func(k string, v interface{})) (int, error) {
-	cnt := t.cache.GetAll(f)
-	return cnt, nil
+func (t *Table) FindAll(f func(k, v string) error) error {
+	return t.db.Iterator(t.Name, f)
 }
 
 func (t *Table) Truncate() {
-	t.cache.Clear()
+	t.db.Truncate(t.Name)
 }
 
 func (t *Table) Status() (int, int, int) {
 	colCount := len(t.Columns)
 	size := 0
-	rowCount := t.cache.GetAll(func(k string, v interface{}) {
-		row := cast.ToSlice(v)
-		size = size + memory.Size(k) + t.rowSize(row)
-	})
+	rowCount := t.db.Count(t.Name)
 	return colCount, rowCount, size / 1024
 }

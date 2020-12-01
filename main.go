@@ -45,8 +45,16 @@ func init() {
 func startCommandFunc(cmd *cobra.Command, args []string) {
 	config.GetConfig().Port = port
 
+	//打开数据存储库
+	err := server.InitStorage()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err.Error(),
+		}).Fatalln("Opening database file error")
+	}
+
 	//打开日志库
-	err := server.OpenLogStorage("magpie-log.db")
+	err = server.OpenLogStorage("magpie-log.db")
 	if err != nil {
 		err = server.OpenLogStorage(fmt.Sprintf("magpie-log-%d.db", port))
 		if err != nil {

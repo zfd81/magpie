@@ -9,16 +9,18 @@ import (
 )
 
 type Config struct {
-	Name      string  `mapstructure:"name"`
-	Version   string  `mapstructure:"version"`
-	Banner    string  `mapstructure:"banner"`
-	Port      int64   `mapstructure:"port"`
-	Team      string  `mapstructure:"team"`
-	Directory string  `mapstructure:"directory"`
-	Memory    Memory  `mapstructure:"memory"`
-	Etcd      Etcd    `mapstructure:"etcd"`
-	Cluster   Cluster `mapstructure:"cluster"`
-	Log       Log     `mapstructure:"mlog"`
+	Name            string  `mapstructure:"name"`
+	Version         string  `mapstructure:"version"`
+	Banner          string  `mapstructure:"banner"`
+	Port            int64   `mapstructure:"port"`
+	Team            string  `mapstructure:"team"`
+	MetaDirectory   string  `mapstructure:"meta-directory"`
+	DataDirectory   string  `mapstructure:"data-directory"`
+	StoragePoolSize int     `mapstructure:"storage-pool-size"`
+	Memory          Memory  `mapstructure:"memory"`
+	Etcd            Etcd    `mapstructure:"etcd"`
+	Cluster         Cluster `mapstructure:"cluster"`
+	Log             Log     `mapstructure:"mlog"`
 }
 
 type Memory struct {
@@ -57,12 +59,14 @@ const (
 )
 
 var defaultConf = Config{
-	Name:      "Magpie",
-	Version:   "1.0.0",
-	Banner:    banner_bulbhead,
-	Port:      8143,
-	Team:      "magpie",
-	Directory: "@magpie",
+	Name:            "Magpie",
+	Version:         "1.0.0",
+	Banner:          banner_bulbhead,
+	Port:            8143,
+	Team:            "magpie",
+	MetaDirectory:   "@magpie",
+	DataDirectory:   "./",
+	StoragePoolSize: 5,
 	Memory: Memory{
 		ExpirationTime:  5 * time.Minute,
 		CleanupInterval: 10 * time.Minute,
@@ -86,6 +90,9 @@ var globalConf = defaultConf
 
 func init() {
 	MAGPIE_HOME := os.Getenv("MAGPIE_HOME") //获取环境变量值
+	if globalConf.DataDirectory == "./" && MAGPIE_HOME != "" {
+		globalConf.DataDirectory = MAGPIE_HOME
+	}
 	viper.SetConfigName(ConfigName)
 	viper.AddConfigPath(ConfigPath)
 	viper.AddConfigPath(MAGPIE_HOME)

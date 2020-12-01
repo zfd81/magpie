@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strings"
 	"sync"
 	"time"
 
@@ -42,7 +41,7 @@ var (
 )
 
 func ClusterPath() string {
-	return conf.Directory + ClusterDirectory
+	return conf.MetaDirectory + ClusterDirectory
 }
 
 func LeaderPath() string {
@@ -51,6 +50,10 @@ func LeaderPath() string {
 
 func MemberPath() string {
 	return ClusterPath() + MemberDirectory
+}
+
+func CurrentNode() *Node {
+	return node
 }
 
 func GetTeam(name string) *Team {
@@ -171,7 +174,7 @@ func DataSync() error {
 			Params: map[string]string{},
 		}
 		db := server.GetDatabase("")
-		for name, _ := range db.Tables {
+		for name, tbl := range db.Tables {
 			startTime := time.Now()
 			request.Params["name"] = name
 			stream, err := c.DataSync(context.Background(), request)
@@ -182,8 +185,6 @@ func DataSync() error {
 				}).Panic("Data synchronization error")
 				return err
 			}
-			tbl := db.GetTable(name)
-			size := len(tbl.Columns)
 			for {
 				res, err := stream.Recv()
 				if err == io.EOF {
@@ -196,9 +197,9 @@ func DataSync() error {
 					}).Error("Data synchronization error")
 					return err
 				}
-				fields := strings.SplitN(res.Data, ",", size)
-				key, row := tbl.RowData(fields)
-				tbl.Insert(key, row)
+				row := tbl.NewRow()
+				row.Load(res.Data, ",")
+				tbl.Insert(row)
 			}
 			log.WithFields(log.Fields{
 				"Table":   name,

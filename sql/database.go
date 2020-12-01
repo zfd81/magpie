@@ -3,12 +3,19 @@ package sql
 import (
 	"encoding/json"
 
+	"github.com/zfd81/magpie/store"
+
 	"github.com/zfd81/magpie/meta"
 )
 
 type Database struct {
 	meta.DatabaseInfo
-	Tables map[string]*Table
+	Tables      map[string]*Table
+	storagePool *store.StoragePool
+}
+
+func (d *Database) FileName() string {
+	return d.Instance.Name + "-" + d.Name
 }
 
 func (d *Database) CreateTable(info meta.TableInfo) *Table {
@@ -21,10 +28,12 @@ func (d *Database) CreateTable(info meta.TableInfo) *Table {
 			Indexes:  info.Indexes,
 			Database: d.DatabaseInfo,
 		},
+		db: d.storagePool,
 	}
 	tbl.init()
 	tbl.Store() //保存元数据
 	d.Tables[tbl.Name] = tbl
+	d.storagePool.CreateTable(tbl.Name)
 	return tbl
 }
 
@@ -37,9 +46,11 @@ func (d *Database) LoadTable(bytes []byte) (*Table, error) {
 	info.Database = d.DatabaseInfo
 	tbl := &Table{
 		TableInfo: *info,
+		db:        d.storagePool,
 	}
 	tbl.init()
 	d.Tables[tbl.Name] = tbl
+	d.storagePool.CreateTable(tbl.Name)
 	return tbl, nil
 }
 
@@ -62,4 +73,12 @@ func (d *Database) DescribeTable(name string) meta.TableInfo {
 	tbl := meta.TableInfo{}
 	meta.LoadMetadata(&tbl, path)
 	return tbl
+}
+
+func (d *Database) GetStorageIndex(key string) int {
+	return d.storagePool.GetStorageIndex([]byte(key))
+}
+
+func (d *Database) GetStorage(index int) store.Storage {
+	return d.storagePool.GetStorage(index)
 }

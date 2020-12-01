@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	pb "github.com/zfd81/magpie/proto/magpiepb"
@@ -57,8 +58,21 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 		Errorf(resp.Message)
 		return
 	}
-	for scanner.Scan() {
-		err = stream.Send(&pb.StreamRequest{Data: scanner.Text()})
+
+	dataStream := make(chan string, 200)
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for scanner.Scan() {
+			dataStream <- scanner.Text()
+		}
+		close(dataStream)
+	}()
+
+	for data := range dataStream {
+		err = stream.Send(&pb.StreamRequest{Data: data})
 		if err != nil {
 			resp, err := stream.CloseAndRecv()
 			if err != nil {
@@ -69,6 +83,8 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 			return
 		}
 	}
+
+	wg.Wait()
 	resp, err := stream.CloseAndRecv()
 	if err != nil {
 		Errorf(err.Error())
