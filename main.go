@@ -30,11 +30,11 @@ var (
 		SuggestFor: []string{"parrot"},
 		Run:        startCommandFunc,
 	}
-	port int64
+	port int32
 )
 
 func init() {
-	rootCmd.Flags().Int64Var(&port, "port", config.GetConfig().Port, "Port to run the server")
+	rootCmd.Flags().Int32Var(&port, "port", config.GetConfig().Port, "Port to run the server")
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05", //时间格式

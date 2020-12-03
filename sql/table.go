@@ -53,8 +53,9 @@ func (r *Row) KeyValue() store.KeyValue {
 	}
 }
 
-func (r *Row) Load(line, sep string) {
+func (r *Row) Load(line, sep string) *Row {
 	r.data = strings.SplitN(line, sep, r.capacity)
+	return r
 }
 
 type Table struct {
