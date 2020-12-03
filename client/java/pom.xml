@@ -22,4 +22,17 @@
         <magpie-client.version>1.0-SNAPSHOT</magpie-client.version>
     </properties>
 
+    <distributionManagement>
+        <repository>
+            <id>Releases</id>
+            <name>deploymentProxy</name>
+            <url>http://172.16.26.61:8081/nexus/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>Snapshots</id>
+            <name>snapshotsProxy</name>
+            <url>http://172.16.26.61:8081/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
 </project>
