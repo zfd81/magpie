@@ -17,7 +17,7 @@ import (
 type Node struct {
 	Id          string `json:"id"`
 	Address     string `json:"addr"`
-	Port        int64  `json:"port"`
+	Port        int32  `json:"port"`
 	Team        string `json:"team"`
 	StartUpTime int64  `json:"start-up-time"`
 	LeaderFlag  bool   `json:"leader-flag,omitempty"`

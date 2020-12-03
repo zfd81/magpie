@@ -2,11 +2,14 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/zfd81/magpie/etcd"
 
 	"github.com/zfd81/magpie/store"
 
@@ -26,31 +29,72 @@ var conf = config.GetConfig()
 
 type MagpieServer struct{}
 
+func (s *MagpieServer) Members(ctx context.Context, request *pb.QueryRequest) (*pb.MembersResponse, error) {
+	kvs, err := etcd.GetWithPrefix(cluster.MemberPath())
+	if err != nil {
+		return nil, err
+	}
+	var nodes []*cluster.Node
+	var teams = make(map[string]*cluster.Team)
+	for _, kv := range kvs {
+		n := &cluster.Node{}
+		err := json.Unmarshal(kv.Value, n)
+		if err != nil {
+			return nil, err
+		}
+		var team *cluster.Team
+		value, found := teams[n.Team]
+		if found {
+			team = value
+		} else {
+			team = &cluster.Team{}
+			teams[n.Team] = team
+		}
+		team.AddMember(n)
+		nodes = append(nodes, n)
+	}
+	members := []*pb.Member{}
+	for _, n := range nodes {
+		team := teams[n.Team]
+		member := &pb.Member{}
+		member.Id = n.Id
+		member.Address = n.Address
+		member.Port = n.Port
+		member.Team = n.Team
+		member.StartUpTime = n.StartUpTime
+		member.LeaderFlag = team.IsLeader(n)
+		members = append(members, member)
+	}
+	return &pb.MembersResponse{
+		Members: members,
+	}, nil
+}
+
 func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 	startTime := time.Now()
 	r, err := stream.Recv()
-	name := r.Data //获得表名
-	db := server.GetDatabase("")
-	tbl := db.GetTable(name)
+	name := r.Data               //获得表名
+	db := server.GetDatabase("") //获得DB
+	tbl := db.GetTable(name)     //获得表
 	if tbl == nil {
 		return stream.SendAndClose(&pb.LoadResponse{
 			Code:    400,
 			Message: fmt.Sprintf("table %s does not exist", name),
 		})
 	}
-
-	var mu sync.RWMutex //读写锁
-	chs := make([]chan []*sql.Row, conf.StoragePoolSize)
-	rowsPool := make([][]*sql.Row, conf.StoragePoolSize)
-	for i := 0; i < conf.StoragePoolSize; i++ {
+	storagePoolSize := conf.StoragePoolSize //存储池大小
+	num := 1000                             //数据块大小
+	var mu sync.RWMutex                     //读写锁
+	chs := make([]chan []*sql.Row, storagePoolSize)
+	rowsPool := make([][]*sql.Row, storagePoolSize)
+	for i := 0; i < storagePoolSize; i++ {
 		chs[i] = make(chan []*sql.Row, 50)
 		rowsPool[i] = []*sql.Row{}
 	}
-
 	wg := sync.WaitGroup{}
 	var cnt int64 = 0
 
-	add := func(count int64) {
+	counter := func(count int64) {
 		mu.Lock()
 		cnt = cnt + count
 		mu.Unlock()
@@ -68,13 +112,11 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 				}
 				err := db.GetStorage(index).BatchPut(name, kvs)
 				if err == nil {
-					add(int64(len(rows)))
+					counter(int64(len(rows)))
 				}
 			}
 		}()
 	}
-
-	num := 1000
 
 	for {
 		r, err = stream.Recv()
@@ -93,8 +135,7 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 			}
 			return err
 		}
-		row := tbl.NewRow()
-		row.Load(r.Data, ",")
+		row := tbl.NewRow().Load(r.Data, ",")
 		index := db.GetStorageIndex(row.Key())
 		rows := &rowsPool[index]
 		*rows = append(*rows, row)
@@ -110,7 +151,7 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 		"table":   name,
 		"elapsed": time.Since(startTime),
 	}).Info("Data loaded successfully")
-	cluster.Broadcast("load table " + strings.TrimSpace(name))
+	cluster.Broadcast("load table " + strings.TrimSpace(name)) //对同组节点进行广播
 	return stream.SendAndClose(&pb.LoadResponse{
 		Code:        200,
 		Name:        "",

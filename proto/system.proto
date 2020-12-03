@@ -12,7 +12,7 @@ message Entry{
   string data = 2;
   string team = 3;
   string address = 4;
-  int64 port = 5;
+  int32 port = 5;
   string timestamp = 6;
 }
 

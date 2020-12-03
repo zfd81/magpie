@@ -12,7 +12,7 @@ type Config struct {
 	Name            string  `mapstructure:"name"`
 	Version         string  `mapstructure:"version"`
 	Banner          string  `mapstructure:"banner"`
-	Port            int64   `mapstructure:"port"`
+	Port            int32   `mapstructure:"port"`
 	Team            string  `mapstructure:"team"`
 	MetaDirectory   string  `mapstructure:"meta-directory"`
 	DataDirectory   string  `mapstructure:"data-directory"`

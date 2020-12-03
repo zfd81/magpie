@@ -49,7 +49,21 @@ message QueryResponse {
   DataType DataType = 4;
 }
 
+message Member{
+  string id =1;
+  string address =2;
+  int32 port =3;
+  string team =4;
+  int64 start_up_time =5;
+  bool leader_flag =6;
+}
+
+message MembersResponse {
+  repeated Member Members = 1;
+}
+
 service Magpie {
+  rpc Members(QueryRequest) returns (MembersResponse) {} // 获得集群成员列表
   rpc Load(stream StreamRequest) returns (LoadResponse) {} // 装载数据
   rpc Execute(QueryRequest) returns (QueryResponse) {} // 查询数据
 }
