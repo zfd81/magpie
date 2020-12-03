@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/antonmedv/expr v1.8.9
 	github.com/boltdb/bolt v1.3.1
+	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.9.0

@@ -8,9 +8,15 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/zfd81/magpie/proto/magpiepb"
-
+	pb3 "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
+	pb "github.com/zfd81/magpie/proto/magpiepb"
+)
+
+const (
+	OneK = 1024
+	OneM = 1024 * OneK
+	OneG = 1024 * OneM
 )
 
 func NewLoadCommand() *cobra.Command {
@@ -37,6 +43,7 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 	name := args[0]
 	path := args[1]
 	info, err := os.Stat(path)
+	fileSize := info.Size()
 	if err != nil || info.IsDir() {
 		Errorf("open %s: No such file", path)
 		return
@@ -60,6 +67,16 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 	}
 
 	dataStream := make(chan string, 200)
+	count := 100
+	cnt := 0
+	bar := pb3.Simple.Start(count)
+	go func() {
+		for i := 0; i < count-1; i++ {
+			bar.Increment()
+			cnt++
+			time.Sleep(time.Duration(fileSize*10/(6*OneM)) * time.Millisecond)
+		}
+	}()
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
@@ -93,6 +110,8 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 	if resp.Code != 200 {
 		Errorf(resp.Message)
 	} else {
+		bar.Add(count - cnt)
+		bar.Finish()
 		Print("Start time: %s", resp.StartTime)
 		Print("End time: %s", resp.EndTime)
 		Print("Elapsed time: %v", time.Duration(resp.ElapsedTime))
