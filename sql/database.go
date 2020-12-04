@@ -75,10 +75,6 @@ func (d *Database) DescribeTable(name string) meta.TableInfo {
 	return tbl
 }
 
-func (d *Database) GetStorageIndex(key string) int {
-	return d.storagePool.GetStorageIndex([]byte(key))
-}
-
 func (d *Database) GetStorage(index int) store.Storage {
 	return d.storagePool.GetStorage(index)
 }

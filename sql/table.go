@@ -17,9 +17,10 @@ const (
 )
 
 type Row struct {
-	data     []string
-	keyFunc  func(data []string) string
-	capacity int
+	keyFunc   func(data []string) string
+	capacity  int
+	data      []string
+	timestamp int64
 }
 
 func (r *Row) Append(data string) {
@@ -34,16 +35,27 @@ func (r *Row) Get(index int) string {
 	return r.data[index]
 }
 
-func (r *Row) Data() []string {
-	return r.data
+func (r *Row) Page() int {
+	return store.PageIndex([]byte(r.Key()))
 }
 
 func (r *Row) Key() string {
 	return r.keyFunc(r.data)
 }
 
+func (r *Row) Data() []string {
+	return r.data
+}
+
 func (r *Row) String() string {
 	return strings.Join(r.data, FieldSeparator)
+}
+
+func (r *Row) Unmarshal() (page int, key string, value string) {
+	key = r.Key()
+	page = store.PageIndex([]byte(key))
+	value = r.String()
+	return
 }
 
 func (r *Row) KeyValue() store.KeyValue {

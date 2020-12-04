@@ -1,5 +1,11 @@
 package store
 
+import "github.com/zfd81/magpie/store/hashcode"
+
+var (
+	poolSize = conf.StoragePoolSize
+)
+
 // Driver is the interface that must be implemented by a KV storage.
 type Driver interface {
 	// Open returns a new Storage.
@@ -37,11 +43,15 @@ func New(path string) (Storage, error) {
 
 func NewStoragePool(path string) (*StoragePool, error) {
 	pool := &StoragePool{
-		pool: make([]Storage, size),
+		pool: make([]Storage, poolSize),
 	}
 	err := pool.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	return pool, nil
+}
+
+func PageIndex(key []byte) int {
+	return hashcode.Hash(key) % poolSize
 }

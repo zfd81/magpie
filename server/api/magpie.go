@@ -15,8 +15,6 @@ import (
 
 	"github.com/zfd81/magpie/config"
 
-	"github.com/zfd81/magpie/sql"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/magpie/server"
@@ -83,13 +81,13 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 		})
 	}
 	storagePoolSize := conf.StoragePoolSize //存储池大小
-	num := 1000                             //数据块大小
+	blocksize := 1000                       //数据块大小
 	var mu sync.RWMutex                     //读写锁
-	chs := make([]chan []*sql.Row, storagePoolSize)
-	rowsPool := make([][]*sql.Row, storagePoolSize)
+	chs := make([]chan []store.KeyValue, storagePoolSize)
+	rowPool := make([][]store.KeyValue, storagePoolSize)
 	for i := 0; i < storagePoolSize; i++ {
-		chs[i] = make(chan []*sql.Row, 50)
-		rowsPool[i] = []*sql.Row{}
+		chs[i] = make(chan []store.KeyValue, 50)
+		rowPool[i] = []store.KeyValue{}
 	}
 	wg := sync.WaitGroup{}
 	var cnt int64 = 0
@@ -105,14 +103,10 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 		index := p
 		go func() {
 			defer wg.Done()
-			for rows := range chs[index] {
-				kvs := make([]store.KeyValue, len(rows))
-				for i, row := range rows {
-					kvs[i] = row.KeyValue()
-				}
+			for kvs := range chs[index] {
 				err := db.GetStorage(index).BatchPut(name, kvs)
 				if err == nil {
-					counter(int64(len(rows)))
+					counter(int64(len(kvs)))
 				}
 			}
 		}()
@@ -121,9 +115,9 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 	for {
 		r, err = stream.Recv()
 		if err == io.EOF {
-			for i, rows := range rowsPool {
-				if len(rows) > 0 {
-					chs[i] <- rows
+			for i, kvs := range rowPool {
+				if len(kvs) > 0 {
+					chs[i] <- kvs
 				}
 				close(chs[i])
 			}
@@ -136,12 +130,12 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 			return err
 		}
 		row := tbl.NewRow().Load(r.Data, ",")
-		index := db.GetStorageIndex(row.Key())
-		rows := &rowsPool[index]
-		*rows = append(*rows, row)
-		if len(*rows) == num {
-			chs[index] <- *rows
-			rowsPool[index] = []*sql.Row{}
+		index, key, val := row.Unmarshal()
+		kvs := &rowPool[index]
+		*kvs = append(*kvs, store.KeyValue{[]byte(key), []byte(val)})
+		if len(*kvs) == blocksize {
+			chs[index] <- *kvs
+			rowPool[index] = []store.KeyValue{}
 		}
 	}
 

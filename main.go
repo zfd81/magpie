@@ -45,6 +45,12 @@ func init() {
 func startCommandFunc(cmd *cobra.Command, args []string) {
 	config.GetConfig().Port = port
 
+	//打印配置信息
+	log.Info("Magpie version: ", config.GetConfig().Version)
+	log.Info("Magpie data directory: ", config.GetConfig().DataDirectory)
+	log.Info("Magpie storage pool size: ", config.GetConfig().StoragePoolSize)
+	log.Info("Magpie etcd endpoints: ", config.GetConfig().Etcd.Endpoints)
+
 	//打开数据存储库
 	err := server.InitStorage()
 	if err != nil {

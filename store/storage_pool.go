@@ -2,12 +2,6 @@ package store
 
 import (
 	"fmt"
-
-	"github.com/zfd81/magpie/store/hashcode"
-)
-
-var (
-	size = conf.StoragePoolSize
 )
 
 type StoragePool struct {
@@ -16,11 +10,11 @@ type StoragePool struct {
 }
 
 func (sp *StoragePool) Open(path string) error {
-	for i := 0; i < size; i++ {
+	for i := 0; i < poolSize; i++ {
 		db := &boltdb{}
 		err := db.Open(fmt.Sprintf("%s_%d.db", path, i))
 		if err != nil {
-			sp.pool = make([]Storage, size)
+			sp.pool = make([]Storage, poolSize)
 			return err
 		}
 		sp.pool[i] = db
@@ -44,19 +38,19 @@ func (sp *StoragePool) BatchPut(table string, kvs []KeyValue) error {
 }
 
 func (sp *StoragePool) Put(table string, key, value []byte) error {
-	index := sp.GetStorageIndex(key)
+	index := PageIndex(key)
 	db := sp.GetStorage(index)
 	if db == nil {
-		return fmt.Errorf("Storage not found: index out of range [%d] with length %d", size, size)
+		return fmt.Errorf("Storage not found: index out of range [%d] with length %d", poolSize, poolSize)
 	}
 	return db.Put(table, key, value)
 }
 
 func (sp *StoragePool) Get(table string, key []byte) ([]byte, error) {
-	index := sp.GetStorageIndex(key)
+	index := PageIndex(key)
 	db := sp.GetStorage(index)
 	if db == nil {
-		return nil, fmt.Errorf("Storage not found: index out of range [%d] with length %d", size, size)
+		return nil, fmt.Errorf("Storage not found: index out of range [%d] with length %d", poolSize, poolSize)
 	}
 	return db.Get(table, key)
 }
@@ -74,10 +68,10 @@ func (sp *StoragePool) GetWithPrefix(table string, prefix []byte) ([]*KeyValue, 
 }
 
 func (sp *StoragePool) Delete(table string, key []byte) error {
-	index := sp.GetStorageIndex(key)
+	index := PageIndex(key)
 	db := sp.GetStorage(index)
 	if db == nil {
-		return fmt.Errorf("Storage not found: index out of range [%d] with length %d", size, size)
+		return fmt.Errorf("Storage not found: index out of range [%d] with length %d", poolSize, poolSize)
 	}
 	return db.Delete(table, key)
 }
@@ -128,12 +122,8 @@ func (sp *StoragePool) Count(table string) int {
 	return cnt
 }
 
-func (sp *StoragePool) GetStorageIndex(key []byte) int {
-	return hashcode.Hash(key) % size
-}
-
 func (sp *StoragePool) GetStorage(index int) Storage {
-	if index < size {
+	if index < poolSize {
 		return sp.pool[index]
 	}
 	return nil
