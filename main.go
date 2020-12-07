@@ -48,7 +48,8 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	//打印配置信息
 	log.Info("Magpie version: ", config.GetConfig().Version)
 	log.Info("Magpie data directory: ", config.GetConfig().DataDirectory)
-	log.Info("Magpie storage pool size: ", config.GetConfig().StoragePoolSize)
+	log.Info("Magpie data buffer size: ", config.GetConfig().BufferSize)
+	log.Info("Magpie data write batch size: ", config.GetConfig().WriteBatchSize)
 	log.Info("Magpie etcd endpoints: ", config.GetConfig().Etcd.Endpoints)
 
 	//打开数据存储库

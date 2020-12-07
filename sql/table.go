@@ -2,6 +2,13 @@ package sql
 
 import (
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/zfd81/magpie/memory"
 
 	"github.com/zfd81/magpie/store"
 
@@ -12,69 +19,96 @@ import (
 	"github.com/zfd81/magpie/meta"
 )
 
-const (
-	FieldSeparator = "|"
+var (
+	bufferSize       = conf.BufferSize
+	batchSize        = conf.WriteBatchSize
+	dataStream       = make(chan []string, bufferSize)
+	batch            = &boat{}
+	counter    int32 = -1 //计数器
 )
 
-type Row struct {
-	keyFunc   func(data []string) string
-	capacity  int
-	data      []string
-	timestamp int64
+type boat struct {
+	//capacity int
+	data []string
+	mu   sync.RWMutex
 }
 
-func (r *Row) Append(data string) {
-	r.data = append(r.data, data)
+func (b boat) Size() int {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return len(b.data)
 }
 
-func (r *Row) Set(index int, val string) {
-	r.data[index] = val
+func (b *boat) Add(key string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.data = append(b.data, key)
 }
 
-func (r *Row) Get(index int) string {
-	return r.data[index]
+func (b *boat) Clear() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.data = []string{}
 }
 
-func (r *Row) Page() int {
-	return store.PageIndex([]byte(r.Key()))
+func (b *boat) Data() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.data
 }
 
-func (r *Row) Key() string {
-	return r.keyFunc(r.data)
-}
-
-func (r *Row) Data() []string {
-	return r.data
-}
-
-func (r *Row) String() string {
-	return strings.Join(r.data, FieldSeparator)
-}
-
-func (r *Row) Unmarshal() (page int, key string, value string) {
-	key = r.Key()
-	page = store.PageIndex([]byte(key))
-	value = r.String()
-	return
-}
-
-func (r *Row) KeyValue() store.KeyValue {
-	return store.KeyValue{
-		Key:   []byte(r.Key()),
-		Value: []byte(r.String()),
+func trigger(tbl *Table) {
+	log.Info("Magpie server start trigger")
+	ticker := time.NewTicker(100 * time.Millisecond)
+	for {
+		<-ticker.C
+		val := atomic.AddInt32(&counter, -1)
+		if val < 0 {
+			if len(dataStream) > 0 {
+				atomic.StoreInt32(&counter, 10)
+			} else {
+				var kvs []store.KeyValue
+				tbl.cache.Iterator(func(k string, v interface{}) error {
+					kvs = append(kvs, store.KeyValue{[]byte(k), []byte(cast.ToString(v))})
+					return nil
+				})
+				if len(kvs) > 0 {
+					err := tbl.db.BatchPut(tbl.Name, kvs)
+					if err == nil {
+						for _, kv := range kvs {
+							tbl.cache.Remove(string(kv.Key))
+						}
+					}
+					log.Info("Trigger inserted data successfully: ", len(kvs))
+				}
+				break
+			}
+		}
 	}
+	log.Info("Magpie server exit trigger")
 }
 
-func (r *Row) Load(line, sep string) *Row {
-	r.data = strings.SplitN(line, sep, r.capacity)
-	return r
+func writer(tbl *Table) {
+	for keys := range dataStream {
+		kvs := make([]store.KeyValue, batchSize)
+		for i, k := range keys {
+			kvs[i] = store.KeyValue{[]byte(k), []byte(tbl.cache.GetString(k))}
+		}
+		err := tbl.db.BatchPut(tbl.Name, kvs)
+		if err == nil {
+			for _, k := range keys {
+				tbl.cache.Remove(k)
+			}
+		}
+	}
 }
 
 type Table struct {
 	meta.TableInfo
 	primaryKeys   []*Column          //主键列
 	columnMapping map[string]*Column //列映射
-	db            store.Storage
+	db            store.Storage      //存储
+	cache         *memory.Cache      //缓存
 	rowkeyFunc    func(data []string) string
 }
 
@@ -89,9 +123,6 @@ func (t *Table) init() {
 	for i, name := range t.Keys {
 		t.primaryKeys[i] = t.columnMapping[name]
 	}
-	//for _, v := range t.DerivedCols {
-	//	t.columnMapping[v.Name] = NewDerivedColumn(*v)
-	//}
 
 	keyIndexs := make([]int, len(t.primaryKeys))
 	for i, col := range t.primaryKeys {
@@ -104,22 +135,12 @@ func (t *Table) init() {
 		}
 		return rowkey.String()
 	}
+
+	t.cache = memory.New()
+	go writer(t)
 }
 
-func (t *Table) GetColumn(name string) *Column {
-	return t.columnMapping[name]
-}
-
-func (t *Table) NewRow() *Row {
-	row := &Row{
-		data:     make([]string, len(t.Columns)),
-		keyFunc:  t.rowkeyFunc,
-		capacity: len(t.Columns),
-	}
-	return row
-}
-
-func (t *Table) RowKey(data map[string]string) string {
+func (t *Table) rowKey(data map[string]string) string {
 	key := strings.Builder{}
 	for _, col := range t.primaryKeys {
 		val, found := data[col.Name]
@@ -132,7 +153,7 @@ func (t *Table) RowKey(data map[string]string) string {
 	return key.String()
 }
 
-func (t *Table) BuildExprEnv(row []string) map[string]interface{} {
+func (t *Table) buildExprEnv(row []string) map[string]interface{} {
 	env := map[string]interface{}{}
 	for _, col := range t.Columns {
 		env[col.Name] = ConversionFuncs[strings.ToUpper(col.DataType)](row[col.Index])
@@ -140,34 +161,43 @@ func (t *Table) BuildExprEnv(row []string) map[string]interface{} {
 	return env
 }
 
-func (t *Table) Insert(row *Row) int {
-	rowkey := strings.Builder{}
-	for _, col := range t.primaryKeys {
-		rowkey.WriteString(row.Get(col.Index))
+func (t *Table) NewRow() *Row {
+	row := &Row{
+		data:     make([]string, len(t.Columns)),
+		capacity: len(t.Columns),
 	}
-	err := t.db.Put(t.Name, []byte(rowkey.String()), []byte(row.String()))
-	if err == nil {
-		return 1
-	}
-	return 0
+	return row
 }
 
-func (t *Table) BatchInsert(rows []Row) int {
-	kvs := make([]store.KeyValue, len(rows))
-	for i, row := range rows {
-		kvs[i] = row.KeyValue()
+func (t *Table) GetColumn(name string) *Column {
+	return t.columnMapping[name]
+}
+
+func (t *Table) Insert(row *Row) int {
+	key := t.rowkeyFunc(row.data)
+	t.cache.Set(key, row.String())
+	batch.Add(key)
+	if batch.Size() == batchSize {
+		dataStream <- batch.Data()
+		batch.Clear()
 	}
-	err := t.db.BatchPut(t.Name, kvs)
-	if err == nil {
-		return len(rows)
+	if atomic.CompareAndSwapInt32(&counter, -1, 10) {
+		go trigger(t)
+	} else {
+		atomic.StoreInt32(&counter, 10)
 	}
-	return 0
+	return 1
 }
 
 func (t *Table) DeleteByPrimaryKey(data map[string]string) int {
-	rowkey := t.RowKey(data)
-	if rowkey != "" {
-		err := t.db.Delete(t.Name, []byte(rowkey))
+	key := t.rowKey(data)
+	if key != "" {
+		_, found := t.cache.Get(key)
+		if found {
+			t.cache.Remove(key)
+			return 1
+		}
+		err := t.db.Delete(t.Name, []byte(key))
 		if err == nil {
 			return 1
 		}
@@ -176,9 +206,9 @@ func (t *Table) DeleteByPrimaryKey(data map[string]string) int {
 }
 
 func (t *Table) UpdateByPrimaryKey(data map[string]string) int {
-	rowkey := t.RowKey(data)
-	if rowkey != "" {
-		bytes, err := t.db.Get(t.Name, []byte(rowkey))
+	key := t.rowKey(data)
+	if key != "" {
+		bytes, err := t.db.Get(t.Name, []byte(key))
 		if err == nil {
 			row := t.NewRow()
 			row.Load(string(bytes), FieldSeparator)
@@ -188,7 +218,7 @@ func (t *Table) UpdateByPrimaryKey(data map[string]string) int {
 					row.Set(col.Index, v)
 				}
 			}
-			err := t.db.Put(t.Name, []byte(rowkey), []byte(row.String()))
+			err := t.db.Put(t.Name, []byte(key), []byte(row.String()))
 			if err == nil {
 				return 1
 			}
@@ -197,23 +227,21 @@ func (t *Table) UpdateByPrimaryKey(data map[string]string) int {
 	return 0
 }
 
-//func (t *Table) readRow(data map[string]interface{}) []interface{} {
-//	key := t.RowKey(data)
-//	if key == "" {
-//		return nil
-//	}
-//	return t.cache.GetSlice(key)
-//}
-
 func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]string) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
-	rowkey := t.RowKey(conditions)
-	if rowkey != "" {
-		bytes, err := t.db.Get(t.Name, []byte(rowkey))
-		if err == nil && bytes != nil {
+	key := t.rowKey(conditions)
+	if key != "" {
+		bytes, err := t.db.Get(t.Name, []byte(key))
+		if err != nil || bytes == nil {
+			value, found := t.cache.Get(key)
+			if found {
+				bytes = []byte(cast.ToString(value))
+			}
+		}
+		if bytes != nil {
 			row := t.NewRow()
 			row.Load(string(bytes), FieldSeparator)
-			env := t.BuildExprEnv(row.Data())
+			env := t.buildExprEnv(row.Data())
 			for _, column := range columns {
 				val, err := expr.Eval(column.GetExpr(), env)
 				if err != nil {

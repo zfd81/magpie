@@ -9,18 +9,19 @@ import (
 )
 
 type Config struct {
-	Name            string  `mapstructure:"name"`
-	Version         string  `mapstructure:"version"`
-	Banner          string  `mapstructure:"banner"`
-	Port            int32   `mapstructure:"port"`
-	Team            string  `mapstructure:"team"`
-	MetaDirectory   string  `mapstructure:"meta-directory"`
-	DataDirectory   string  `mapstructure:"data-directory"`
-	StoragePoolSize int     `mapstructure:"storage-pool-size"`
-	Memory          Memory  `mapstructure:"memory"`
-	Etcd            Etcd    `mapstructure:"etcd"`
-	Cluster         Cluster `mapstructure:"cluster"`
-	Log             Log     `mapstructure:"mlog"`
+	Name           string  `mapstructure:"name"`
+	Version        string  `mapstructure:"version"`
+	Banner         string  `mapstructure:"banner"`
+	Port           int32   `mapstructure:"port"`
+	Team           string  `mapstructure:"team"`
+	MetaDirectory  string  `mapstructure:"meta-directory"`
+	DataDirectory  string  `mapstructure:"data-directory"`
+	BufferSize     int     `mapstructure:"buffer-size"`
+	WriteBatchSize int     `mapstructure:"write-batch-size"`
+	Memory         Memory  `mapstructure:"memory"`
+	Etcd           Etcd    `mapstructure:"etcd"`
+	Cluster        Cluster `mapstructure:"cluster"`
+	Log            Log     `mapstructure:"mlog"`
 }
 
 type Memory struct {
@@ -59,14 +60,15 @@ const (
 )
 
 var defaultConf = Config{
-	Name:            "Magpie",
-	Version:         "1.0.0",
-	Banner:          banner_bulbhead,
-	Port:            8143,
-	Team:            "magpie",
-	MetaDirectory:   "@magpie",
-	DataDirectory:   "./",
-	StoragePoolSize: 5,
+	Name:           "Magpie",
+	Version:        "1.0.0",
+	Banner:         banner_bulbhead,
+	Port:           8143,
+	Team:           "magpie",
+	MetaDirectory:  "@magpie",
+	DataDirectory:  "./",
+	BufferSize:     1000,
+	WriteBatchSize: 5000,
 	Memory: Memory{
 		ExpirationTime:  5 * time.Minute,
 		CleanupInterval: 10 * time.Minute,

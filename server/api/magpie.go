@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/zfd81/magpie/etcd"
-
-	"github.com/zfd81/magpie/store"
 
 	"github.com/zfd81/magpie/config"
 
@@ -80,66 +77,19 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 			Message: fmt.Sprintf("table %s does not exist", name),
 		})
 	}
-	storagePoolSize := conf.StoragePoolSize //存储池大小
-	blocksize := 1000                       //数据块大小
-	var mu sync.RWMutex                     //读写锁
-	chs := make([]chan []store.KeyValue, storagePoolSize)
-	rowPool := make([][]store.KeyValue, storagePoolSize)
-	for i := 0; i < storagePoolSize; i++ {
-		chs[i] = make(chan []store.KeyValue, 50)
-		rowPool[i] = []store.KeyValue{}
-	}
-	wg := sync.WaitGroup{}
 	var cnt int64 = 0
-
-	counter := func(count int64) {
-		mu.Lock()
-		cnt = cnt + count
-		mu.Unlock()
-	}
-
-	for p := 0; p < conf.StoragePoolSize; p++ {
-		wg.Add(1)
-		index := p
-		go func() {
-			defer wg.Done()
-			for kvs := range chs[index] {
-				err := db.GetStorage(index).BatchPut(name, kvs)
-				if err == nil {
-					counter(int64(len(kvs)))
-				}
-			}
-		}()
-	}
-
 	for {
 		r, err = stream.Recv()
 		if err == io.EOF {
-			for i, kvs := range rowPool {
-				if len(kvs) > 0 {
-					chs[i] <- kvs
-				}
-				close(chs[i])
-			}
 			break
 		}
 		if err != nil {
-			for _, c := range chs {
-				close(c)
-			}
 			return err
 		}
 		row := tbl.NewRow().Load(r.Data, ",")
-		index, key, val := row.Unmarshal()
-		kvs := &rowPool[index]
-		*kvs = append(*kvs, store.KeyValue{[]byte(key), []byte(val)})
-		if len(*kvs) == blocksize {
-			chs[index] <- *kvs
-			rowPool[index] = []store.KeyValue{}
-		}
+		cnt = cnt + int64(tbl.Insert(row))
 	}
 
-	wg.Wait()
 	endTime := time.Now()
 	log.WithFields(log.Fields{
 		"table":   name,

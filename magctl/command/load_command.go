@@ -74,7 +74,7 @@ func loadCommandFunc(cmd *cobra.Command, args []string) {
 		for i := 0; i < count-1; i++ {
 			bar.Increment()
 			cnt++
-			time.Sleep(time.Duration(fileSize*10/(6*OneM)) * time.Millisecond)
+			time.Sleep(time.Duration(fileSize*10/(7*OneM)) * time.Millisecond)
 		}
 	}()
 	wg := sync.WaitGroup{}

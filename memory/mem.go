@@ -39,13 +39,14 @@ func (c *Cache) RemoveWithPrefix(prefix string) int {
 	return cnt
 }
 
-func (c *Cache) GetAll(f func(k string, v interface{})) int {
-	cnt := 0
+func (c *Cache) Iterator(f func(k string, v interface{}) error) error {
 	for k, v := range c.c.Items() {
-		f(k, v.Object)
-		cnt++
+		err := f(k, v.Object)
+		if err != nil {
+			return err
+		}
 	}
-	return cnt
+	return nil
 }
 
 func (c *Cache) Get(key string) (interface{}, bool) {
