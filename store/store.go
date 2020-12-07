@@ -34,18 +34,3 @@ func New(path string) (Storage, error) {
 	}
 	return db, nil
 }
-
-//func NewStoragePool(path string) (*StoragePool, error) {
-//	pool := &StoragePool{
-//		pool: make([]Storage, poolSize),
-//	}
-//	err := pool.Open(path)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return pool, nil
-//}
-//
-//func PageIndex(key []byte) int {
-//	return hashcode.Hash(key) % poolSize
-//}
