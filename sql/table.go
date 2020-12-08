@@ -65,13 +65,12 @@ func trigger(tbl *Table) {
 		val := atomic.AddInt32(&counter, -1)
 		if val < 0 {
 			if len(dataStream) > 0 {
-				atomic.StoreInt32(&counter, 10)
+				atomic.StoreInt32(&counter, 20)
 			} else {
 				var kvs []store.KeyValue
-				tbl.cache.Iterator(func(k string, v interface{}) error {
-					kvs = append(kvs, store.KeyValue{[]byte(k), []byte(cast.ToString(v))})
-					return nil
-				})
+				for _, k := range batch.data {
+					kvs = append(kvs, store.KeyValue{[]byte(k), []byte(tbl.cache.GetString(k))})
+				}
 				if len(kvs) > 0 {
 					err := tbl.db.BatchPut(tbl.Name, kvs)
 					if err == nil {
