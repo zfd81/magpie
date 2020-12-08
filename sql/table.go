@@ -45,10 +45,12 @@ func (b *boat) Add(key string) {
 	b.data = append(b.data, key)
 }
 
-func (b *boat) Clear() {
+func (b *boat) Clear() []string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	data := b.data
 	b.data = []string{}
+	return data
 }
 
 func (b *boat) Data() []string {
@@ -67,8 +69,9 @@ func trigger(tbl *Table) {
 			if len(dataStream) > 0 {
 				atomic.StoreInt32(&counter, 20)
 			} else {
+				keys := batch.Clear()
 				var kvs []store.KeyValue
-				for _, k := range batch.data {
+				for _, k := range keys {
 					kvs = append(kvs, store.KeyValue{[]byte(k), []byte(tbl.cache.GetString(k))})
 				}
 				if len(kvs) > 0 {
