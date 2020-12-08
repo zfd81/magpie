@@ -60,7 +60,7 @@ func (b *boat) Data() []string {
 }
 
 func trigger(tbl *Table) {
-	log.Info("Magpie server start trigger")
+	log.Info("Magpie server start write trigger")
 	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		<-ticker.C
@@ -87,7 +87,7 @@ func trigger(tbl *Table) {
 			}
 		}
 	}
-	log.Info("Magpie server exit trigger")
+	log.Info("Magpie server exit write trigger")
 }
 
 func writer(tbl *Table) {
@@ -235,22 +235,21 @@ func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]string)
 	if key != "" {
 		bytes, err := t.db.Get(t.Name, []byte(key))
 		if err != nil || bytes == nil {
-			value, found := t.cache.Get(key)
-			if found {
+			if value, found := t.cache.Get(key); found {
 				bytes = []byte(cast.ToString(value))
+			} else {
+				return result, nil
 			}
 		}
-		if bytes != nil {
-			row := t.NewRow()
-			row.Load(string(bytes), FieldSeparator)
-			env := t.buildExprEnv(row.Data())
-			for _, column := range columns {
-				val, err := expr.Eval(column.GetExpr(), env)
-				if err != nil {
-					return result, err
-				}
-				result[column.GetName()] = val
+		row := t.NewRow()
+		row.Load(string(bytes), FieldSeparator)
+		env := t.buildExprEnv(row.Data())
+		for _, column := range columns {
+			val, err := expr.Eval(column.GetExpr(), env)
+			if err != nil {
+				return result, err
 			}
+			result[column.GetName()] = val
 		}
 	}
 	return result, nil
