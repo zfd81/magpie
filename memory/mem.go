@@ -57,6 +57,14 @@ func (c *Cache) GetWithExpiration(key string) (interface{}, time.Time, bool) {
 	return c.c.GetWithExpiration(key)
 }
 
+func (c *Cache) GetByte(key string) []byte {
+	value, found := c.Get(key)
+	if found {
+		return value.([]byte)
+	}
+	return nil
+}
+
 func (c *Cache) GetString(key string) string {
 	value, found := c.Get(key)
 	if found {

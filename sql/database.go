@@ -11,7 +11,7 @@ import (
 type Database struct {
 	meta.DatabaseInfo
 	Tables  map[string]*Table
-	storage store.Storage
+	storage *store.StoragePool
 }
 
 func (d *Database) FileName() string {
@@ -28,7 +28,7 @@ func (d *Database) CreateTable(info meta.TableInfo) *Table {
 			Indexes:  info.Indexes,
 			Database: d.DatabaseInfo,
 		},
-		db: d.storage,
+		db: d,
 	}
 	tbl.init()
 	tbl.Store() //保存元数据
@@ -46,7 +46,7 @@ func (d *Database) LoadTable(bytes []byte) (*Table, error) {
 	info.Database = d.DatabaseInfo
 	tbl := &Table{
 		TableInfo: *info,
-		db:        d.storage,
+		db:        d,
 	}
 	tbl.init()
 	d.Tables[tbl.Name] = tbl
@@ -75,6 +75,6 @@ func (d *Database) DescribeTable(name string) meta.TableInfo {
 	return tbl
 }
 
-//func (d *Database) GetStorage(index int) store.Storage {
-//	return d.storagePool.GetStorage(index)
-//}
+func (d *Database) GetStorage(index int) store.Storage {
+	return d.storage.GetStorage(index)
+}

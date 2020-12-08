@@ -20,20 +20,25 @@ import (
 )
 
 var (
-	bufferSize       = conf.BufferSize
-	batchSize        = conf.WriteBatchSize
-	dataStream       = make(chan []string, bufferSize)
-	batch            = &boat{}
+	bufferSize = conf.BufferSize
+	batchSize  = conf.WriteBatchSize
+	poolSize   = conf.StoragePoolSize
+	fleet      *Fleet
 	counter    int32 = -1 //计数器
 )
 
 type boat struct {
-	//capacity int
-	data []string
-	mu   sync.RWMutex
+	channel  chan []string
+	capacity int
+	data     []string
+	mu       sync.RWMutex
 }
 
-func (b boat) Size() int {
+func (b *boat) Channel() chan []string {
+	return b.channel
+}
+
+func (b *boat) Size() int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return len(b.data)
@@ -43,20 +48,51 @@ func (b *boat) Add(key string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.data = append(b.data, key)
+	if len(b.data) == b.capacity {
+		b.channel <- b.data
+		b.data = []string{}
+	}
 }
 
-func (b *boat) Clear() []string {
+func (b *boat) Clear() int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	data := b.data
-	b.data = []string{}
-	return data
+	cnt := len(b.data)
+	if cnt > 0 {
+		b.channel <- b.data
+		b.data = []string{}
+	}
+	return cnt
 }
 
-func (b *boat) Data() []string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.data
+type Fleet struct {
+	boats []*boat
+	//capacity int
+}
+
+func (f *Fleet) GetBoat(index int) *boat {
+	return f.boats[index]
+}
+
+func (f *Fleet) SetBoat(index int, boat *boat) {
+	f.boats[index] = boat
+}
+
+func (f *Fleet) HasTask() bool {
+	for _, b := range f.boats {
+		if len(b.channel) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *Fleet) Clear() int {
+	cnt := 0
+	for _, b := range f.boats {
+		cnt = cnt + b.Clear()
+	}
+	return cnt
 }
 
 func trigger(tbl *Table) {
@@ -66,22 +102,12 @@ func trigger(tbl *Table) {
 		<-ticker.C
 		val := atomic.AddInt32(&counter, -1)
 		if val < 0 {
-			if len(dataStream) > 0 {
+			if fleet.HasTask() {
 				atomic.StoreInt32(&counter, 20)
 			} else {
-				keys := batch.Clear()
-				var kvs []store.KeyValue
-				for _, k := range keys {
-					kvs = append(kvs, store.KeyValue{[]byte(k), []byte(tbl.cache.GetString(k))})
-				}
-				if len(kvs) > 0 {
-					err := tbl.db.BatchPut(tbl.Name, kvs)
-					if err == nil {
-						for _, kv := range kvs {
-							tbl.cache.Remove(string(kv.Key))
-						}
-					}
-					log.Info("Trigger inserted data successfully: ", len(kvs))
+				cnt := fleet.Clear()
+				if cnt > 0 {
+					log.Info("Trigger inserted data successfully: ", cnt)
 				}
 				break
 			}
@@ -90,14 +116,18 @@ func trigger(tbl *Table) {
 	log.Info("Magpie server exit write trigger")
 }
 
-func writer(tbl *Table) {
-	for keys := range dataStream {
-		kvs := make([]store.KeyValue, batchSize)
-		for i, k := range keys {
-			kvs[i] = store.KeyValue{[]byte(k), []byte(tbl.cache.GetString(k))}
+func writer(tbl *Table, index int) {
+	storage := tbl.db.GetStorage(index)
+	stream := fleet.GetBoat(index).channel
+	for keys := range stream {
+		kvs := make([]store.KeyValue, 0, batchSize)
+		for _, k := range keys {
+			kvs = append(kvs, store.KeyValue{[]byte(k), []byte(tbl.cache.GetString(k))})
 		}
-		err := tbl.db.BatchPut(tbl.Name, kvs)
-		if err == nil {
+		err := storage.BatchPut(tbl.Name, kvs)
+		if err != nil {
+			log.Error("Data storage error: ", err)
+		} else {
 			for _, k := range keys {
 				tbl.cache.Remove(k)
 			}
@@ -109,7 +139,7 @@ type Table struct {
 	meta.TableInfo
 	primaryKeys   []*Column          //主键列
 	columnMapping map[string]*Column //列映射
-	db            store.Storage      //存储
+	db            *Database          //存储
 	cache         *memory.Cache      //缓存
 	rowkeyFunc    func(data []string) string
 }
@@ -139,7 +169,19 @@ func (t *Table) init() {
 	}
 
 	t.cache = memory.New()
-	go writer(t)
+
+	fleet = &Fleet{
+		boats: make([]*boat, poolSize),
+	}
+	for i := 0; i < poolSize; i++ {
+		b := &boat{
+			channel:  make(chan []string, bufferSize),
+			capacity: batchSize,
+		}
+		fleet.SetBoat(i, b)
+		index := i
+		go writer(t, index)
+	}
 }
 
 func (t *Table) rowKey(data map[string]string) string {
@@ -178,11 +220,7 @@ func (t *Table) GetColumn(name string) *Column {
 func (t *Table) Insert(row *Row) int {
 	key := t.rowkeyFunc(row.data)
 	t.cache.Set(key, row.String())
-	batch.Add(key)
-	if batch.Size() == batchSize {
-		dataStream <- batch.Data()
-		batch.Clear()
-	}
+	fleet.GetBoat(store.PageIndex([]byte(key))).Add(key)
 	if atomic.CompareAndSwapInt32(&counter, -1, 10) {
 		go trigger(t)
 	} else {
@@ -199,7 +237,7 @@ func (t *Table) DeleteByPrimaryKey(data map[string]string) int {
 			t.cache.Remove(key)
 			return 1
 		}
-		err := t.db.Delete(t.Name, []byte(key))
+		err := t.db.storage.Delete(t.Name, []byte(key))
 		if err == nil {
 			return 1
 		}
@@ -210,7 +248,7 @@ func (t *Table) DeleteByPrimaryKey(data map[string]string) int {
 func (t *Table) UpdateByPrimaryKey(data map[string]string) int {
 	key := t.rowKey(data)
 	if key != "" {
-		bytes, err := t.db.Get(t.Name, []byte(key))
+		bytes, err := t.db.storage.Get(t.Name, []byte(key))
 		if err == nil {
 			row := t.NewRow()
 			row.Load(string(bytes), FieldSeparator)
@@ -220,7 +258,7 @@ func (t *Table) UpdateByPrimaryKey(data map[string]string) int {
 					row.Set(col.Index, v)
 				}
 			}
-			err := t.db.Put(t.Name, []byte(key), []byte(row.String()))
+			err := t.db.storage.Put(t.Name, []byte(key), []byte(row.String()))
 			if err == nil {
 				return 1
 			}
@@ -233,7 +271,7 @@ func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]string)
 	result := map[string]interface{}{}
 	key := t.rowKey(conditions)
 	if key != "" {
-		bytes, err := t.db.Get(t.Name, []byte(key))
+		bytes, err := t.db.storage.Get(t.Name, []byte(key))
 		if err != nil || bytes == nil {
 			if value, found := t.cache.Get(key); found {
 				bytes = []byte(cast.ToString(value))
@@ -256,16 +294,16 @@ func (t *Table) FindByPrimaryKey(columns []*Field, conditions map[string]string)
 }
 
 func (t *Table) FindAll(f func(k, v string) error) error {
-	return t.db.Iterator(t.Name, f)
+	return t.db.storage.Iterator(t.Name, f)
 }
 
 func (t *Table) Truncate() {
-	t.db.Truncate(t.Name)
+	t.db.storage.Truncate(t.Name)
 }
 
 func (t *Table) Status() (int, int, int) {
 	colCount := len(t.Columns)
 	size := 0
-	rowCount := t.db.Count(t.Name)
+	rowCount := t.db.storage.Count(t.Name)
 	return colCount, rowCount, size / 1024
 }

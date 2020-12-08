@@ -2,6 +2,7 @@ package sql
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/zfd81/magpie/config"
@@ -29,7 +30,16 @@ func (i *Instance) CreateDatabase(info meta.DatabaseInfo) (*Database, error) {
 	}
 	i.Databases[db.Name] = db
 
-	storage, err := store.New(filepath.Join(conf.DataDirectory, fmt.Sprintf("%s.db", db.FileName())))
+	dataDirectory := filepath.Join(conf.DataDirectory, "data")
+	dir, err := os.Stat(dataDirectory)
+	//判断数据目录是否存在
+	if err != nil || !dir.IsDir() {
+		err = os.MkdirAll(dataDirectory, os.ModePerm)
+		if err != nil {
+			return nil, fmt.Errorf("mkdir failed![%v]\n", err)
+		}
+	}
+	storage, err := store.NewStoragePool(filepath.Join(conf.DataDirectory, "data", db.FileName()))
 	if err != nil {
 		return nil, err
 	}
