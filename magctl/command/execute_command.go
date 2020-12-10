@@ -42,12 +42,15 @@ func executeCommandFunc(cmd *cobra.Command, args []string) {
 		ExitWithError(ExitBadArgs, fmt.Errorf("execute command requires sql as its argument"))
 	}
 	startTime := time.Now() //计算当前时间
-	request := &pb.QueryRequest{}
 	sql := strings.TrimSpace(strings.Join(args, " "))
 	Print(sql)
-	request.Sql = sql
+	request := &pb.Request{
+		Sql: sql,
+	}
+	isUpdate := true
 	sql = strings.ToUpper(sql)
 	if strings.HasPrefix(sql, "SELECT") {
+		isUpdate = false
 		request.QueryType = pb.QueryType_SELECT
 	} else if strings.HasPrefix(sql, "INSERT") {
 		request.QueryType = pb.QueryType_INSERT
@@ -62,7 +65,13 @@ func executeCommandFunc(cmd *cobra.Command, args []string) {
 	conn := GetConnection()
 	defer conn.Close()
 	magpieClient = pb.NewMagpieClient(conn)
-	resp, err := magpieClient.Execute(context.Background(), request)
+	var resp *pb.Response
+	var err error
+	if isUpdate {
+		resp, err = magpieClient.Update(context.Background(), request)
+	} else {
+		resp, err = magpieClient.Query(context.Background(), request)
+	}
 	if err != nil {
 		Errorf(err.Error())
 		return

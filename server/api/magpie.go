@@ -24,7 +24,7 @@ var conf = config.GetConfig()
 
 type MagpieServer struct{}
 
-func (s *MagpieServer) Members(ctx context.Context, request *pb.QueryRequest) (*pb.MembersResponse, error) {
+func (s *MagpieServer) Members(ctx context.Context, request *pb.Request) (*pb.MembersResponse, error) {
 	kvs, err := etcd.GetWithPrefix(cluster.MemberPath())
 	if err != nil {
 		return nil, err
@@ -107,22 +107,31 @@ func (s *MagpieServer) Load(stream pb.Magpie_LoadServer) error {
 	})
 }
 
-func (s *MagpieServer) Execute(ctx context.Context, request *pb.QueryRequest) (*pb.QueryResponse, error) {
+func (s *MagpieServer) Query(ctx context.Context, request *pb.Request) (*pb.Response, error) {
 	res, err := server.Execute(request.Sql)
 	if err != nil {
 		return nil, err
 	}
-	if request.QueryType != pb.QueryType_SELECT {
-		cluster.Broadcast(request.Sql)
+	resp := &pb.Response{
+		Code:     200,
+		Data:     res,
+		DataType: pb.DataType_MAP,
 	}
-	resp := &pb.QueryResponse{
-		Code: 200,
-		Data: res,
+	return resp, nil
+}
+
+func (s *MagpieServer) Update(ctx context.Context, request *pb.Request) (*pb.Response, error) {
+	res, err := server.Execute(request.Sql)
+	if err != nil {
+		return nil, err
 	}
-	if request.QueryType == pb.QueryType_SELECT {
-		resp.DataType = pb.DataType_MAP
-	} else {
-		resp.DataType = pb.DataType_INT
+	//if request.QueryType != pb.QueryType_SELECT {
+	//	cluster.Broadcast(request.Sql)
+	//}
+	resp := &pb.Response{
+		Code:     200,
+		Data:     res,
+		DataType: pb.DataType_INT,
 	}
 	return resp, nil
 }
