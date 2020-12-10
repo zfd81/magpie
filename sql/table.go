@@ -301,7 +301,7 @@ func (t *Table) Truncate() {
 	t.db.storage.Truncate(t.Name)
 }
 
-func (t *Table) Status() (int, int, int) {
+func (t *Table) Status() (int, int64, int) {
 	colCount := len(t.Columns)
 	size := 0
 	rowCount := t.db.storage.Count(t.Name)

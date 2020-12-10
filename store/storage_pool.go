@@ -2,6 +2,8 @@ package store
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 
 	"github.com/zfd81/magpie/store/hashcode"
 )
@@ -120,11 +122,18 @@ func (sp *StoragePool) IteratorWithPrefix(table string, prefix []byte, f func(k,
 	return nil
 }
 
-func (sp *StoragePool) Count(table string) int {
-	cnt := 0
+func (sp *StoragePool) Count(table string) int64 {
+	var cnt int64 = 0
+	wg := sync.WaitGroup{}
 	for _, db := range sp.pool {
-		cnt = cnt + db.Count(table)
+		d := db
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			atomic.AddInt64(&cnt, d.Count(table))
+		}()
 	}
+	wg.Wait()
 	return cnt
 }
 

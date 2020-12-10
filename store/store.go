@@ -18,7 +18,7 @@ type Storage interface {
 	Truncate(table string) error
 	Iterator(table string, f func(k, v string) error) error
 	IteratorWithPrefix(table string, prefix []byte, f func(k, v string) error) error
-	Count(table string) int
+	Count(table string) int64
 }
 
 type KeyValue struct {

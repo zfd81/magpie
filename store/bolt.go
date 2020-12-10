@@ -143,8 +143,8 @@ func (db *boltdb) IteratorWithPrefix(table string, prefix []byte, f func(k, v st
 	})
 }
 
-func (db *boltdb) Count(table string) int {
-	cnt := 0
+func (db *boltdb) Count(table string) int64 {
+	var cnt int64 = 0
 	db.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket([]byte(table)).Cursor()
 		for k, _ := c.First(); k != nil; k, _ = c.Next() {

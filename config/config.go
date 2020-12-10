@@ -70,7 +70,7 @@ var defaultConf = Config{
 	DataDirectory:   "./",
 	BufferSize:      1000,
 	WriteBatchSize:  5000,
-	StoragePoolSize: 5,
+	StoragePoolSize: 10,
 	Memory: Memory{
 		ExpirationTime:  5 * time.Minute,
 		CleanupInterval: 10 * time.Minute,
