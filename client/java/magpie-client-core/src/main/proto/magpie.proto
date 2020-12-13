@@ -37,19 +37,35 @@ enum QueryType {
   SELECT = 3;
 }
 
-message QueryRequest {
+message Request {
   QueryType QueryType = 1;
   string sql = 2;
 }
 
-message QueryResponse {
+message Response {
   int32 code = 1;
   string message = 2; //消息
   string data = 3;
   DataType DataType = 4;
 }
 
-service Magpie {
-  rpc Load(stream StreamRequest) returns (LoadResponse) {} // 装载数据
-  rpc Execute(QueryRequest) returns (QueryResponse) {} // 查询数据
+message Member {
+  string id = 1;
+  string address = 2;
+  int32 port = 3;
+  string team = 4;
+  int64 start_up_time = 5;
+  bool leader_flag = 6;
 }
+
+message MembersResponse {
+  repeated Member Members = 1;
+}
+
+service Magpie {
+  rpc Members(Request) returns (MembersResponse) {} // 获得集群成员列表
+  rpc Load(stream StreamRequest) returns (LoadResponse) {} // 装载数据
+  rpc Query(Request) returns (Response) {} // 运行select语句
+  rpc Update(Request) returns (Response) {} // 运行insert/update/delete操作
+}
+

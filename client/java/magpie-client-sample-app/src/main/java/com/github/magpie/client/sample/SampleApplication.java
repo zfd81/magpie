@@ -1,7 +1,7 @@
 package com.github.magpie.client.sample;
 
 import com.github.magpie.LoadResponse;
-import com.github.magpie.QueryResponse;
+import com.github.magpie.Response;
 import com.github.magpie.client.*;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ public class SampleApplication {
         System.out.println(loadCallback.getResult());
 
         // 查询
-        QueryResponse executeResult = magpieClient.execute(QUERY_SQL);
+        Response executeResult = magpieClient.query(QUERY_SQL);
         System.out.println("查询结果: ");
         System.out.println(executeResult);
     }

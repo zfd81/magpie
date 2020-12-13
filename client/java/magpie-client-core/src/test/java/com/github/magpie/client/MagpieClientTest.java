@@ -1,7 +1,7 @@
 package com.github.magpie.client;
 
 import com.github.magpie.LoadResponse;
-import com.github.magpie.QueryResponse;
+import com.github.magpie.Response;
 import com.github.magpie.RpcResponse;
 import com.github.magpie.StreamResponse;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,8 +48,8 @@ class MagpieClientTest {
 
     /** 查询 */
     @org.junit.jupiter.api.Test
-    void execute() {
-        QueryResponse executeResult = magpieClient.execute(QUERY_SQL);
+    void query() {
+        Response executeResult = magpieClient.query(QUERY_SQL);
         assertNotNull(executeResult);
         System.out.println("查询结果: ");
         System.out.println(executeResult);
@@ -129,7 +129,7 @@ class MagpieClientTest {
         String data = "";
         String team = "";
         String address = "";
-        long port = 0;
+        int port = 0;
         String timestamp = "";
         RpcResponse response = magpieClient.getLog().apply(index, data, team, address, port, timestamp);
         assertNotNull(response);

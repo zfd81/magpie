@@ -1,7 +1,7 @@
 package com.github.magpie.client.sample;
 
 import com.github.magpie.LoadResponse;
-import com.github.magpie.QueryResponse;
+import com.github.magpie.Response;
 import com.github.magpie.client.Callback;
 import com.github.magpie.client.MagpieClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ public class SampleSpringBootApplication implements CommandLineRunner {
         System.out.println(loadCallback.getResult());
 
         // 同步查询
-        QueryResponse executeResult = magpieClient.execute(QUERY_SQL);
+        Response executeResult = magpieClient.query(QUERY_SQL);
         System.out.println("同步查询结果: ");
         System.out.println(executeResult);
     }

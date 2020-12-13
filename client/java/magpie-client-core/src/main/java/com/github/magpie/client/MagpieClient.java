@@ -7,9 +7,11 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.NameResolver;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -128,6 +130,45 @@ public class MagpieClient {
     }
 
     /**
+     * Magpie - 获得集群成员列表
+     * @param sql 待执行的 sql
+     * @return 响应信息
+     */
+    private MembersResponse members(String sql) {
+        Request request = Request.newBuilder()
+            .setQueryType(QueryType .SELECT)
+            .setSql(sql)
+            .build();
+        return magpieBlockingStub.members(request);
+    }
+
+    /**
+     * Magpie - 获得集群成员列表
+     * @param queryType 类型
+     * @param sql 待执行的 sql
+     * @return 响应信息
+     */
+    private MembersResponse members(QueryType queryType, String sql) {
+        Request request = Request.newBuilder()
+            .setQueryType(queryType)
+            .setSql(sql)
+            .build();
+        return magpieBlockingStub.members(request);
+    }
+
+    /**
+     * Magpie - 异步加载表数据
+     * @param tableName 表名
+     * @param data 表数据信息
+     * @param callback 接收响应的回调
+     * @throws IOException
+     */
+    public void load(String tableName, String data, final Callback<LoadResponse> callback) throws IOException {
+        InputStream inputStream = IOUtils.toInputStream(data, "UTF-8");
+        load(tableName, new BufferedReader(new InputStreamReader(inputStream)), callback);
+    }
+
+    /**
      * Magpie - 异步加载表数据
      * @param tableName 表名
      * @param file 用于读取表数据信息的 File
@@ -205,28 +246,53 @@ public class MagpieClient {
     }
 
     /**
-     * Magpie - 同步执行 sql
+     * Magpie - 同步查询
      * @param sql 待执行的 sql
      * @return 响应信息
      */
-    public QueryResponse execute(String sql) {
-        QueryResponse response = execute(QueryType.SELECT, sql);
+    public Response query(String sql) {
+        Response response = query(QueryType.SELECT, sql);
         log.info("响应: {}", response);
         return response;
     }
 
     /**
-     * Magpie - 同步执行 sql
+     * Magpie - 同步查询
      * @param queryType 类型
      * @param sql 待执行的 sql
      * @return 响应信息
      */
-    public QueryResponse execute(QueryType queryType, String sql) {
-        QueryRequest request = QueryRequest.newBuilder()
+    private Response query(QueryType queryType, String sql) {
+        Request request = Request.newBuilder()
             .setQueryType(queryType)
             .setSql(sql)
             .build();
-        return magpieBlockingStub.execute(request);
+        return magpieBlockingStub.query(request);
+    }
+
+    /**
+     * Magpie - 同步更新
+     * @param sql 待执行的 sql
+     * @return 响应信息
+     */
+    public Response update(String sql) {
+        Response response = update(QueryType.UPDATE, sql);
+        log.info("响应: {}", response);
+        return response;
+    }
+
+    /**
+     * Magpie - 同步更新
+     * @param queryType 类型
+     * @param sql 待执行的 sql
+     * @return 响应信息
+     */
+    private Response update(QueryType queryType, String sql) {
+        Request request = Request.newBuilder()
+            .setQueryType(queryType)
+            .setSql(sql)
+            .build();
+        return magpieBlockingStub.update(request);
     }
 
     public class Storage {
@@ -347,7 +413,7 @@ public class MagpieClient {
          * @param timestamp 时间戳
          * @return 响应信息
          */
-        public RpcResponse apply(long index, String data, String team, String address, long port, String timestamp) {
+        public RpcResponse apply(long index, String data, String team, String address, int port, String timestamp) {
             Entry entry = Entry.newBuilder()
                 .setIndex(index)
                 .setData(data)
